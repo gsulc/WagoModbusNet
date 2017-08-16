@@ -1,0 +1,5 @@
+D:\dev\gsulc\sandbox\WagoModbusNet\WagoModbusNet\bin\Debug\WagoModbusNet.dll
+D:\dev\gsulc\sandbox\WagoModbusNet\WagoModbusNet\bin\Debug\WagoModbusNet.pdb
+D:\dev\gsulc\sandbox\WagoModbusNet\WagoModbusNet\obj\Debug\WagoModbusNet.csprojResolveAssemblyReference.cache
+D:\dev\gsulc\sandbox\WagoModbusNet\WagoModbusNet\obj\Debug\WagoModbusNet.dll
+D:\dev\gsulc\sandbox\WagoModbusNet\WagoModbusNet\obj\Debug\WagoModbusNet.pdb
