@@ -55,6 +55,11 @@ namespace WagoModbusNet
             set { _timeout = value; }
         }
 
+        public abstract bool Connected { get; set; }
+
+        public abstract wmnRet Connect();
+        public abstract void Disconnect();
+
         /// <summary>
         /// FC1 - Read Coils
         /// WAGO coupler and controller do not differ between FC1 and FC2

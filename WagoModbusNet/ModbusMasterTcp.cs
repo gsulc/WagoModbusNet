@@ -71,7 +71,8 @@ namespace WagoModbusNet
 
         public override wmnRet Connect()
         {
-            if (_connected) Disconnect();
+            if (_connected)
+                Disconnect();
 
             // Create client socket
             _sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);

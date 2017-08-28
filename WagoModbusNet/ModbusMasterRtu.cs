@@ -98,7 +98,7 @@ namespace WagoModbusNet
         private int _respRawLength;
 
         protected bool _connected;
-        public bool Connected
+        public override bool Connected
         {
             get { return _connected; }
             set
@@ -114,9 +114,10 @@ namespace WagoModbusNet
             }
         }
 
-        public virtual wmnRet Connect()
+        public override wmnRet Connect()
         {
-            if (_connected) Disconnect();
+            if (_connected)
+                Disconnect();
             try
             {
                 //Create instance
@@ -157,7 +158,7 @@ namespace WagoModbusNet
             return this.Connect();
         }
 
-        public virtual void Disconnect()
+        public override void Disconnect()
         {
             if (_sp != null)
             {

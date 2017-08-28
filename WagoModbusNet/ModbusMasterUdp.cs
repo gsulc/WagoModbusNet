@@ -118,7 +118,7 @@ namespace WagoModbusNet
         }
 
         protected bool _connected;
-        public bool Connected
+        public override bool Connected
         {
             get { return _connected; }
             set
@@ -135,7 +135,7 @@ namespace WagoModbusNet
         }
 
 
-        public virtual wmnRet Connect()
+        public override wmnRet Connect()
         {
             //Create socket
             _sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
@@ -157,7 +157,7 @@ namespace WagoModbusNet
             return Connect();
         }
 
-        public virtual void Disconnect()
+        public override void Disconnect()
         {
             //Close socket
             if (_sock != null)
