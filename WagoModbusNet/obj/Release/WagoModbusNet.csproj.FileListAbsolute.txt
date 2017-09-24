@@ -1,5 +1,4 @@
 D:\dev\gsulc\sandbox\WagoModbusNet\WagoModbusNet\bin\Release\WagoModbusNet.dll
 D:\dev\gsulc\sandbox\WagoModbusNet\WagoModbusNet\bin\Release\WagoModbusNet.pdb
-D:\dev\gsulc\sandbox\WagoModbusNet\WagoModbusNet\obj\Release\WagoModbusNet.csprojResolveAssemblyReference.cache
 D:\dev\gsulc\sandbox\WagoModbusNet\WagoModbusNet\obj\Release\WagoModbusNet.dll
 D:\dev\gsulc\sandbox\WagoModbusNet\WagoModbusNet\obj\Release\WagoModbusNet.pdb
