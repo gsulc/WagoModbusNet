@@ -36,6 +36,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Exceptions\NotConnectedException.cs" />
+    <Compile Include="Exceptions\TimeoutException.cs" />
     <Compile Include="Utilities\CRC16.cs" />
     <Compile Include="Enums\ModbusExceptionCodes.cs" />
     <Compile Include="Enums\ModbusFunctionCodes.cs" />

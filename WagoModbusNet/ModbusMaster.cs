@@ -355,41 +355,35 @@ namespace WagoModbusNet
         }
 
 
-
+        // TODO: too many arguments
         // Build common part of modbus request, decorate it with transport layer specific header, send request and get response PDU back 
-        public wmnRet SendModbusRequest(byte id, ModbusFunctionCodes functionCode, ushort readAddress, ushort readCount, ushort writeAddress, ushort writeCount, byte[] writeData, out byte[] responsePdu)
+        public wmnRet SendModbusRequest(byte id, ModbusFunctionCodes functionCode, ushort readAddress, ushort readCount, ushort writeAddress, ushort writeCount, byte[] writeData, out byte[] responsePDU)
         {
-            responsePdu = null;
-            byte[] reqPdu; // Request PDU
+            responsePDU = null;
             // Build common part of modbus request
-            wmnRet ret = BuildRequestPDU(id, functionCode, readAddress, readCount, writeAddress, writeCount, writeData, out reqPdu);
-            if (ret.Value != 0)
-            {
-                return ret;
-            }
-            byte[] reqAdu; // Request ADU
+            byte[] requestPDU = BuildRequestPDU(id, functionCode, readAddress, readCount, writeAddress, writeCount, writeData);
+
             // Decorate common part of modbus request with transport layer specific header
-            ret = BuildRequestAdu(reqPdu, out reqAdu);
-            if (ret.Value != 0)
-            {
-                return ret;
-            }
+            byte[] requestADU = BuildRequestAdu(requestPDU);
+
             // Send modbus request and return response 
-            return Query(reqAdu, out responsePdu);
+            responsePDU = Query(requestADU);
+            return new wmnRet((int)wmnErrorOffset.wmnSUCCESS, "ret");
         }
 
 
         // Decorate common part of modbus request with transport layer specific header
-        protected abstract wmnRet BuildRequestAdu(byte[] reqPdu, out byte[] reqAdu);
+        protected abstract byte[] BuildRequestAdu(byte[] reqPdu);
 
         // Send modbus request transport layer specific and return response PDU
-        protected abstract wmnRet Query(byte[] reqAdu, out byte[] respPdu);
+        protected abstract byte[] Query(byte[] reqAdu);
 
+        // TODO: Refactor this. Too many lines and arguments; ugly switch statement. Hard to follow. Break out a new class.
         // Build common part of modbus request
-        private wmnRet BuildRequestPDU(byte id, ModbusFunctionCodes functionCode, ushort readAddress, ushort readCount, ushort writeAddress, ushort writeCount, byte[] writeData, out byte[] reqPdu)
+        private byte[] BuildRequestPDU(byte id, ModbusFunctionCodes functionCode, ushort readAddress, ushort readCount, ushort writeAddress, ushort writeCount, byte[] writeData)
         {
             byte[] help; // Used to convert ushort into bytes
-            reqPdu = null;
+            byte[] reqPdu = null;
 
             switch (functionCode)
             {
@@ -523,8 +517,9 @@ namespace WagoModbusNet
                         reqPdu[11 + i] = writeData[i];
                     }
                     break;
-            }
-            return new wmnRet(0, "Successful executed");
+            } // switch
+
+            return reqPdu;
         }
     }
 }

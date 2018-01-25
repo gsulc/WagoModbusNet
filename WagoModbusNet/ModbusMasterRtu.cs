@@ -52,7 +52,7 @@ namespace WagoModbusNet
         {
         }
 
-        private SerialPort _sp;             // The serial interface instance
+        private SerialPort _serialPort;             // The serial interface instance
         private string _portName = "COM1";  // Name of serial interface like "COM23" 
         public string Portname
         {
@@ -92,8 +92,8 @@ namespace WagoModbusNet
         }
 
         // Receive response helpers        
-        private byte[] _respRaw = new byte[512];
-        private int _respRawLength;
+        private byte[] _responseBuffer = new byte[512]; // TODO: inspect implementation. Should not keep around a buffer as a field.
+        private int _responseBufferLength;
 
         protected bool _connected;
         public override bool Connected
@@ -119,10 +119,10 @@ namespace WagoModbusNet
             try
             {
                 //Create instance
-                _sp = new SerialPort(_portName, _baudrate, _parity, _databits, _stopbits);
-                _sp.Handshake = _handshake;
-                _sp.WriteTimeout = _timeout;
-                _sp.ReadTimeout = _timeout;
+                _serialPort = new SerialPort(_portName, _baudrate, _parity, _databits, _stopbits);
+                _serialPort.Handshake = _handshake;
+                _serialPort.WriteTimeout = _timeout;
+                _serialPort.ReadTimeout = _timeout;
             }
             catch (Exception e)
             {
@@ -131,7 +131,7 @@ namespace WagoModbusNet
             }
             try
             {
-                _sp.Open();
+                _serialPort.Open();
             }
             catch (Exception e)
             {
@@ -158,34 +158,26 @@ namespace WagoModbusNet
 
         public override void Disconnect()
         {
-            if (_sp != null)
+            if (_serialPort != null)
             {
-                _sp.Close();
-                _sp = null;
+                _serialPort.Close();
+                _serialPort = null;
             }
             _connected = false;
         }
 
         // Send request and and wait for response 
-        protected override wmnRet Query(byte[] reqAdu, out byte[] respPdu)
+        protected override byte[] Query(byte[] requestADU)
         {
-            respPdu = null;
+            byte[] responsePDU = null;
             if (!_connected)
-            {
-                return new wmnRet(-500, "Error: 'Not connected' ");
-            }
-            try
-            {
-                // Send Request( synchron ) 
-                _sp.Write(reqAdu, 0, reqAdu.Length);
-            }
-            catch (Exception e)
-            {
-                return new wmnRet(-300, "NetException: " + e.Message);
-            }
-            _respRaw.Initialize();
-            _respRawLength = 0;
-            _sp.ReadTimeout = _timeout;
+                throw new NotConnectedException();
+
+            // Send Request( synchron ) 
+            _serialPort.Write(requestADU, 0, requestADU.Length);
+            _responseBuffer.Initialize();
+            _responseBufferLength = 0;
+            _serialPort.ReadTimeout = _timeout;
             int tmpTimeout = 50; // 50 ms
             if (_baudrate < 9600)
             {
@@ -197,12 +189,12 @@ namespace WagoModbusNet
                 // Read all data until a timeout exception is arrived
                 do
                 {
-                    _respRaw[_respRawLength] = (byte)_sp.ReadByte();
-                    _respRawLength++;
+                    _responseBuffer[_responseBufferLength] = (byte)_serialPort.ReadByte();
+                    _responseBufferLength++;
                     // Change receive timeout after first received byte
-                    if (_sp.ReadTimeout != tmpTimeout)
+                    if (_serialPort.ReadTimeout != tmpTimeout)
                     {
-                        _sp.ReadTimeout = tmpTimeout;
+                        _serialPort.ReadTimeout = tmpTimeout;
                     }
                 }
                 while (true);
@@ -211,26 +203,23 @@ namespace WagoModbusNet
             {
                 ; // Thats what we are waiting for to know "All data received" 
             }
-            catch (Exception e)
-            {
-                // Something other happens 
-                return new wmnRet(-300, "NetException: " + e.Message); ;
-            }
             finally
             {
                 // Check Response
-                if (_respRawLength == 0)
+                if (_responseBufferLength == 0)
                 {
-                    ret = new wmnRet(-102, "Timeout error: Do not receive response whitin specified 'Timeout' ");
+                    throw new TimeoutException(); // TODO: This is a direct replacement. It may not be the appropriate Exception.
                 }
                 else
                 {
-                    ret = CheckResponse(_respRaw, _respRawLength, out respPdu);
+                    ret = CheckResponse(_responseBuffer, _responseBufferLength, out responsePDU);
                 }
             }
-            return ret;
+
+            return responsePDU;
         }
 
+        // TODO: refactor
         protected virtual wmnRet CheckResponse(byte[] respRaw, int respRawLength, out byte[] respPdu)
         {
             respPdu = null;
@@ -259,21 +248,21 @@ namespace WagoModbusNet
             return new wmnRet(0, "Successful executed");
         }
 
-        protected override wmnRet BuildRequestAdu(byte[] reqPdu, out byte[] reqAdu)
+        protected override byte[] BuildRequestAdu(byte[] requestPDU)
         {
-            reqAdu = new byte[reqPdu.Length + 2];  // Contains the modbus request protocol data unit(PDU) togehther with additional information for ModbusRTU
+            byte[] requestADU = new byte[requestPDU.Length + 2];  // Contains the modbus request protocol data unit(PDU) togehther with additional information for ModbusRTU
             // Copy request PDU
-            for (int i = 0; i < reqPdu.Length; i++)
+            for (int i = 0; i < requestPDU.Length; i++)
             {
-                reqAdu[i] = reqPdu[i];
+                requestADU[i] = requestPDU[i];
             }
             // Calc CRC16
-            byte[] crc16 = CRC16.CalcCRC16(reqAdu, reqAdu.Length - 2);
+            byte[] crc16 = CRC16.CalcCRC16(requestADU, requestADU.Length - 2);
             // Append CRC
-            reqAdu[reqAdu.Length - 2] = crc16[0];
-            reqAdu[reqAdu.Length - 1] = crc16[1];
+            requestADU[requestADU.Length - 2] = crc16[0];
+            requestADU[requestADU.Length - 1] = crc16[1];
 
-            return new wmnRet(0, "Successful executed");
+            return requestADU;
         }
     }
 }

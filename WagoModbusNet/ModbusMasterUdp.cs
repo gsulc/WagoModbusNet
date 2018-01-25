@@ -136,9 +136,9 @@ namespace WagoModbusNet
         public override wmnRet Connect()
         {
             //Create socket
-            _sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            _sock.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, _timeout);
-            _sock.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, _timeout);
+            _socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, _timeout);
+            _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, _timeout);
             return new wmnRet(0, "Successful executed");
         }
 
@@ -158,65 +158,49 @@ namespace WagoModbusNet
         public override void Disconnect()
         {
             //Close socket
-            if (_sock != null)
+            if (_socket != null)
             {
-                _sock.Close();
-                _sock = null;
+                _socket.Close();
+                _socket = null;
             }
 
         }
-        protected Socket _sock;
+        protected Socket _socket;
         protected IPAddress _ip = null;
 
         // Send request and and wait for response
-        protected override wmnRet Query(byte[] reqAdu, out byte[] respPdu)
+        protected override byte[] Query(byte[] requestADU)
         {
-            respPdu = null;
-            if (_ip == null)
+            byte[] responsePDU = null;
+            if (_ip == null) // TODO: remove check
             {
-                return new wmnRet(-301, "DNS error: Could not resolve Ip-Address for " + _hostname);
+                // return new wmnRet(-301, "DNS error: Could not resolve Ip-Address for " + _hostname);
+                // TODO: Since IP is created from _hostname, the exception should be thrown when _ip is assigned
             }
             if (!_connected)
-            {
                 Connect(); // Connect will succesful in any case because it just create a socket instance
-            }
+
             try
             {
-
                 // Send Request( synchron )             
-                IPEndPoint ipepRemote;
-                try
-                {
-                    ipepRemote = new IPEndPoint(_ip, _port);
-                    _sock.SendTo(reqAdu, ipepRemote);
-                }
-                catch (Exception e)
-                {
-                    return new wmnRet(-300, "NetException: " + e.Message);
-                }
+                IPEndPoint ipepRemote = new IPEndPoint(_ip, _port);
+                _socket.SendTo(requestADU, ipepRemote);
 
-                byte[] tmpBuf = new byte[255]; //Receive buffer
-                try
-                {
-                    // Remote EndPoint to capture the identity of responding host.                    
-                    EndPoint epRemote = (EndPoint)ipepRemote;
+                byte[] receiveBuffer = new byte[255];
+                // Remote EndPoint to capture the identity of responding host.                    
+                EndPoint epRemote = (EndPoint)ipepRemote;
 
-                    int byteCount = _sock.ReceiveFrom(tmpBuf, 0, tmpBuf.Length, SocketFlags.None, ref epRemote);
+                int byteCount = _socket.ReceiveFrom(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None, ref epRemote);
 
-                    return CheckResponse(tmpBuf, byteCount, out respPdu);
-                }
-                catch (Exception e)
-                {
-                    return new wmnRet(-300, "NetException: " + e.Message);
-                }
+                wmnRet ret = CheckResponse(receiveBuffer, byteCount, out responsePDU); // TODO: refactor CheckResponse
             }
             finally
             {
                 if (_autoConnect)
-                {
                     Disconnect();
-                }
             }
+
+            return responsePDU;
         }
 
         protected virtual wmnRet CheckResponse(byte[] respRaw, int respRawLength, out byte[] respPdu)
@@ -249,9 +233,9 @@ namespace WagoModbusNet
         }
 
         // Prepare request telegram
-        protected override wmnRet BuildRequestAdu(byte[] reqPdu, out byte[] reqAdu)
+        protected override byte[] BuildRequestAdu(byte[] reqPdu)
         {
-            reqAdu = new byte[6 + reqPdu.Length]; // Contains the modbus request protocol data unit(PDU) togehther with additional information for ModbusTCP
+            byte[] reqAdu = new byte[6 + reqPdu.Length]; // Contains the modbus request protocol data unit(PDU) togehther with additional information for ModbusTCP
             byte[] help; // Used to convert ushort into bytes
 
             help = BitConverter.GetBytes(this.TransactionId);
@@ -267,7 +251,8 @@ namespace WagoModbusNet
             {
                 reqAdu[6 + i] = reqPdu[i];
             }
-            return new wmnRet(0, "Successful executed");
+
+            return reqAdu;
         }
     }
 }

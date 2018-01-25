@@ -52,23 +52,23 @@ namespace WagoModbusNet
 
         }
 
-        protected override wmnRet BuildRequestAdu(byte[] reqPdu, out byte[] reqAdu)
+        protected override byte[] BuildRequestAdu(byte[] requestPDU)
         {
-            reqAdu = new byte[((reqPdu.Length + 1) * 2) + 3];  // Contains the modbus request protocol data unit(PDU) togehther with additional information for ModbusASCII
+            byte[] requestADU = new byte[((requestPDU.Length + 1) * 2) + 3];  // Contains the modbus request protocol data unit(PDU) togehther with additional information for ModbusASCII
             // Insert START_OF_FRAME_CHAR's
-            reqAdu[0] = 0x3A;                   // START_OF_FRAME_CHAR   
+            requestADU[0] = 0x3A;                   // START_OF_FRAME_CHAR   
 
             // Convert nibbles to ASCII, insert nibbles into ADU and calculate LRC on the fly
             byte val;
             byte lrc = 0;
-            for (int ii = 0, jj = 0; ii < (reqPdu.Length * 2); ii++)
+            for (int ii = 0, jj = 0; ii < (requestPDU.Length * 2); ii++)
             {
                 //Example : Byte = 0x5B converted to Char1 = 0x35 ('5') and Char2 = 0x42 ('B') 
-                val = ((ii % 2) == 0) ? val = (byte)((reqPdu[jj] >> 4) & 0x0F) : (byte)(reqPdu[jj] & 0x0F);
-                reqAdu[1 + ii] = (val <= 0x09) ? (byte)(0x30 + val) : (byte)(0x37 + val);
+                val = ((ii % 2) == 0) ? val = (byte)((requestPDU[jj] >> 4) & 0x0F) : (byte)(requestPDU[jj] & 0x0F);
+                requestADU[1 + ii] = (val <= 0x09) ? (byte)(0x30 + val) : (byte)(0x37 + val);
                 if ((ii % 2) != 0)
                 {
-                    lrc += reqPdu[jj];
+                    lrc += requestPDU[jj];
                     jj++;
                 }
             }
@@ -76,16 +76,16 @@ namespace WagoModbusNet
             // Convert LRC upper nibble to ASCII            
             val = (byte)((lrc >> 4) & 0x0F);
             // Insert ASCII coded upper LRC nibble into ADU
-            reqAdu[reqAdu.Length - 4] = (val <= 0x09) ? (byte)(0x30 + val) : (byte)(0x37 + val);
+            requestADU[requestADU.Length - 4] = (val <= 0x09) ? (byte)(0x30 + val) : (byte)(0x37 + val);
             // Convert LRC lower nibble to ASCII   
             val = (byte)(lrc & 0x0F);
             // Insert ASCII coded lower LRC nibble into ADU
-            reqAdu[reqAdu.Length - 3] = (val <= 0x09) ? (byte)(0x30 + val) : (byte)(0x37 + val);
+            requestADU[requestADU.Length - 3] = (val <= 0x09) ? (byte)(0x30 + val) : (byte)(0x37 + val);
             // Insert END_OF_FRAME_CHAR's
-            reqAdu[reqAdu.Length - 2] = 0x0D;   // END_OF_FRAME_CHAR1
-            reqAdu[reqAdu.Length - 1] = 0x0A;   // END_OF_FRAME_CHAR2
+            requestADU[requestADU.Length - 2] = 0x0D;   // END_OF_FRAME_CHAR1
+            requestADU[requestADU.Length - 1] = 0x0A;   // END_OF_FRAME_CHAR2
 
-            return new wmnRet(0, "Successful executed");
+            return requestADU;
         }
 
         protected override wmnRet CheckResponse(byte[] respRaw, int respRawLength, out byte[] respPdu)
