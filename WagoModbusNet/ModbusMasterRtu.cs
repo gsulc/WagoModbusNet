@@ -99,61 +99,32 @@ namespace WagoModbusNet
         public override bool Connected
         {
             get { return _connected; }
-            set
-            {
-                if (value)
-                {
-                    _connected = (Connect().Value == 0) ? true : false;
-                }
-                else
-                {
-                    Disconnect();
-                }
-            }
         }
 
-        public override wmnRet Connect()
+        public override void Connect()
         {
             if (_connected)
                 Disconnect();
-            try
-            {
-                //Create instance
-                _serialPort = new SerialPort(_portName, _baudrate, _parity, _databits, _stopbits);
-                _serialPort.Handshake = _handshake;
-                _serialPort.WriteTimeout = _timeout;
-                _serialPort.ReadTimeout = _timeout;
-            }
-            catch (Exception e)
-            {
-                // Could not create instance of SerialPort class
-                return new wmnRet(-300, "NetException: " + e.Message);
-            }
-            try
-            {
-                _serialPort.Open();
-            }
-            catch (Exception e)
-            {
-                // Could not open serial port
-                return new wmnRet(-300, "NetException: " + e.Message);
-            }
+
+            _serialPort = new SerialPort(_portName, _baudrate, _parity, _databits, _stopbits);
+            _serialPort.Handshake = _handshake;
+            _serialPort.WriteTimeout = _timeout;
+            _serialPort.ReadTimeout = _timeout;
+            _serialPort.Open();
             _connected = true;
-            return new wmnRet(0, "Successful executed");
         }
 
 
-        public virtual wmnRet Connect(string portname, int baudrate, Parity parity, int databits, StopBits stopbits, Handshake handshake)
+        public virtual void Connect(string portname, int baudrate, Parity parity, int databits, StopBits stopbits, Handshake handshake)
         {
-            //Copy settings into private members
             _portName = portname;
             _baudrate = baudrate;
             _parity = parity;
             _databits = databits;
             _stopbits = stopbits;
             _handshake = handshake;
-            //Create instance
-            return this.Connect();
+            
+            Connect();
         }
 
         public override void Disconnect()
@@ -180,10 +151,8 @@ namespace WagoModbusNet
             _serialPort.ReadTimeout = _timeout;
             int tmpTimeout = 50; // 50 ms
             if (_baudrate < 9600)
-            {
                 tmpTimeout = (int)((10000 / _baudrate) + 50);
-            }
-            wmnRet ret;
+
             try
             {
                 // Read all data until a timeout exception is arrived
@@ -193,11 +162,8 @@ namespace WagoModbusNet
                     _responseBufferLength++;
                     // Change receive timeout after first received byte
                     if (_serialPort.ReadTimeout != tmpTimeout)
-                    {
                         _serialPort.ReadTimeout = tmpTimeout;
-                    }
-                }
-                while (true);
+                } while (true);
             }
             catch (TimeoutException)
             {
@@ -207,45 +173,36 @@ namespace WagoModbusNet
             {
                 // Check Response
                 if (_responseBufferLength == 0)
-                {
-                    throw new TimeoutException(); // TODO: This is a direct replacement. It may not be the appropriate Exception.
-                }
+                    throw new TimeoutException(); // TODO: This is a direct replacement. It may not be the appropriate Exception type.
                 else
-                {
-                    ret = CheckResponse(_responseBuffer, _responseBufferLength, out responsePDU);
-                }
+                    responsePDU = CheckResponse(_responseBuffer, _responseBufferLength);
             }
 
             return responsePDU;
         }
-
-        // TODO: refactor
-        protected virtual wmnRet CheckResponse(byte[] respRaw, int respRawLength, out byte[] respPdu)
+        
+        protected virtual byte[] CheckResponse(byte[] respRaw, int respRawLength)
         {
-            respPdu = null;
+            byte[] responsePDU = null;
             // Check minimal response length 
             if (respRawLength < 5)
-            {
-                return new wmnRet(-500, "Error: Invalid response telegram, do not receive minimal length of 5 byte");
-            }
+                throw new GeneralWMNException("Error: Invalid response telegram. Did not receive minimal length of 5 bytes.");
+            
             // Is response a "modbus exception response"
             if ((respRaw[1] & 0x80) > 0)
-            {
-                return new wmnRet((int)respRaw[2], "Modbus exception received: " + ((ModbusExceptionCodes)respRaw[2]).ToString());
-            }
+                throw ModbusException.GetModbusException(respRaw[2]);
+            
             // Check CRC
             byte[] crc16 = CRC16.CalcCRC16(respRaw, respRawLength - 2);
             if ((respRaw[respRawLength - 2] != crc16[0]) | (respRaw[respRawLength - 1] != crc16[1]))
-            {
-                return new wmnRet(-501, "Error: Invalid response telegram, CRC16-check failed");
-            }
+                throw new GeneralWMNException("Error: Invalid response telegram, CRC16-check failed");
+            
             // Strip ADU header and copy response PDU into output buffer 
-            respPdu = new byte[respRawLength - 2];
+            responsePDU = new byte[respRawLength - 2];
             for (int i = 0; i < respRawLength - 2; i++)
-            {
-                respPdu[i] = respRaw[i];
-            }
-            return new wmnRet(0, "Successful executed");
+                responsePDU[i] = respRaw[i];
+
+            return responsePDU;
         }
 
         protected override byte[] BuildRequestAdu(byte[] requestPDU)
@@ -253,9 +210,8 @@ namespace WagoModbusNet
             byte[] requestADU = new byte[requestPDU.Length + 2];  // Contains the modbus request protocol data unit(PDU) togehther with additional information for ModbusRTU
             // Copy request PDU
             for (int i = 0; i < requestPDU.Length; i++)
-            {
                 requestADU[i] = requestPDU[i];
-            }
+            
             // Calc CRC16
             byte[] crc16 = CRC16.CalcCRC16(requestADU, requestADU.Length - 2);
             // Append CRC

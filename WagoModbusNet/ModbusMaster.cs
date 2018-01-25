@@ -53,9 +53,9 @@ namespace WagoModbusNet
             set { _timeout = value; }
         }
 
-        public abstract bool Connected { get; set; }
+        public abstract bool Connected { get; }
 
-        public abstract wmnRet Connect();
+        public abstract void Connect();
         public abstract void Disconnect();
 
         /// <summary>

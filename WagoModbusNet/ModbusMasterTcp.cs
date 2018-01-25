@@ -67,7 +67,7 @@ namespace WagoModbusNet
             _port = port;
         }
 
-        public override wmnRet Connect()
+        public override void Connect()
         {
             if (_connected)
                 Disconnect();
@@ -78,29 +78,23 @@ namespace WagoModbusNet
             _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, _timeout);
             // Reset timer
             _mreConnectTimeout.Reset();
-            try
+
+            // Call async Connect 
+            _socket.BeginConnect(new IPEndPoint(_ip, _port), new AsyncCallback(OnConnect), _socket);
+            // Stay here until connection established or timeout expires
+            if (_mreConnectTimeout.WaitOne(_timeout, false))
             {
-                // Call async Connect 
-                _socket.BeginConnect(new IPEndPoint(_ip, _port), new AsyncCallback(OnConnect), _socket);
-                // Stay here until connection established or timeout expires
-                if (_mreConnectTimeout.WaitOne(_timeout, false))
-                {
-                    // Successful connected
-                    _connected = true;
-                    return new wmnRet(0, "Successful executed");
-                }
-                else
-                {
-                    // Timeout expired 
-                    _connected = false;
-                    _socket.Close(); // Implizit .EndConnect free ressources 
-                    _socket = null;
-                    return new wmnRet(-101, "TIMEOUT-ERROR: Timeout expired while 'Try to connect ...'");
-                }
+                // Successful connected
+                _connected = true;
+                return;
             }
-            catch (Exception e)
+            else
             {
-                return new wmnRet(-300, "NetException: " + e.Message);
+                // Timeout expired 
+                _connected = false;
+                _socket.Close(); // Implizit .EndConnect free ressources 
+                _socket = null;
+                throw new GeneralWMNException("TIMEOUT-ERROR: Timeout expired while 'Try to connect ...'");
             }
         }
 
@@ -125,17 +119,17 @@ namespace WagoModbusNet
             }
         }
 
-        public override wmnRet Connect(string hostname)
+        public override void Connect(string hostname)
         {
             this.Hostname = hostname;
-            return Connect();
+            Connect();
         }
 
-        public override wmnRet Connect(string hostname, int port)
+        public override void Connect(string hostname, int port)
         {
             this.Hostname = hostname;
             _port = port;
-            return Connect();
+            Connect();
         }
 
         public override void Disconnect()

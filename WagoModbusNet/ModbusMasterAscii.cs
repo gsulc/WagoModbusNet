@@ -88,19 +88,17 @@ namespace WagoModbusNet
             return requestADU;
         }
 
-        protected override wmnRet CheckResponse(byte[] respRaw, int respRawLength, out byte[] respPdu)
+        protected override byte[] CheckResponse(byte[] respRaw, int respRawLength)
         {
-            respPdu = null;
+            byte[] responsePDU = null;
             // Check minimal response length 
             if (respRawLength < 13)
-            {
-                return new wmnRet(-501, "Error: Invalid response telegram, do not receive minimal length of 13 byte");
-            }
+                throw new GeneralWMNException("Error: Invalid response telegram, did not receive minimal length of 13 bytes");
+            
             // Check "START_OF_FRAME_CHAR" and "END_OF_FRAME_CHAR's"
             if ((respRaw[0] != 0x3A) | (respRaw[respRawLength - 2] != 0x0D) | (respRaw[respRawLength - 1] != 0x0A))
-            {
-                return new wmnRet(-501, "Error: Invalid response telegram, could not find 'START_OF_FRAME_CHAR' or 'END_OF_FRAME_CHARs'");
-            }
+                throw new GeneralWMNException("Error: Invalid response telegram, could not find 'START_OF_FRAME_CHAR' or 'END_OF_FRAME_CHARs'");
+
             // Convert ASCII telegram to binary
             byte[] buffer = new byte[(respRawLength - 3) / 2];
             byte high, low, val;
@@ -116,27 +114,23 @@ namespace WagoModbusNet
             // Calculate LRC
             byte lrc = 0;
             for (int i = 0; i < buffer.Length - 1; i++)
-            {
                 lrc += buffer[i];
-            }
+
             lrc = (byte)(lrc * (-1));
             // Check LRC
             if (buffer[buffer.Length - 1] != lrc)
-            {
-                return new wmnRet(-501, "Error: Invalid response telegram, LRC check failed");
-            }
+                throw new GeneralWMNException("Error: Invalid response telegram, LRC check failed");
+            
             // Is response a "modbus exception response"
             if ((buffer[1] & 0x80) > 0)
-            {
-                return new wmnRet((int)respRaw[2], "Modbus exception received: " + ((ModbusExceptionCodes)buffer[2]).ToString());
-            }
+                throw ModbusException.GetModbusException(buffer[2]);
+
             // Strip LRC and copy response PDU into output buffer 
-            respPdu = new byte[buffer.Length - 1];
-            for (int i = 0; i < respPdu.Length; i++)
-            {
-                respPdu[i] = buffer[i];
-            }
-            return new wmnRet(0, "Successful executed");
+            responsePDU = new byte[buffer.Length - 1];
+            for (int i = 0; i < responsePDU.Length; i++)
+                responsePDU[i] = buffer[i];
+
+            return responsePDU;
         }
     }
 }

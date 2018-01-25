@@ -119,40 +119,26 @@ namespace WagoModbusNet
         public override bool Connected
         {
             get { return _connected; }
-            set
-            {
-                if (value)
-                {
-                    _connected = (Connect().Value == 0) ? true : false;
-                }
-                else
-                {
-                    Disconnect();
-                }
-            }
         }
 
-
-        public override wmnRet Connect()
+        public override void Connect()
         {
-            //Create socket
             _socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, _timeout);
             _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, _timeout);
-            return new wmnRet(0, "Successful executed");
         }
 
-        public virtual wmnRet Connect(string hostname)
+        public virtual void Connect(string hostname)
         {
             this.Hostname = hostname;
-            return Connect();
+            Connect();
         }
 
-        public virtual wmnRet Connect(string hostname, int port)
+        public virtual void Connect(string hostname, int port)
         {
             this.Hostname = hostname;
             _port = port;
-            return Connect();
+            Connect();
         }
 
         public override void Disconnect()
