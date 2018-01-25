@@ -69,23 +69,20 @@ namespace WagoModbusNet
         /// <param name="readCount"></param>
         /// <param name="data"></param>
         /// <returns>wmnRet</returns>
-        public wmnRet ReadCoils(byte id, ushort startAddress, ushort readCount, out bool[] data)
+        public bool[] ReadCoils(byte id, ushort startAddress, ushort readCount)
         {
-            data = null;
-            byte[] responsePdu; //Response PDU
-            // Build common part of modbus request, decorate it with transport layer specific header, send request and get response PDU back 
-            wmnRet ret = SendModbusRequest(id, ModbusFunctionCodes.fc1_ReadCoils, startAddress, readCount, 0, 0, null, out responsePdu);
-            if (ret.Value == 0)
+            bool[] data = null;
+            byte[] responsePdu = SendModbusRequest(id, ModbusFunctionCodes.fc1_ReadCoils, startAddress, readCount, 0, 0, null);
+
+            //Strip PDU header and convert data into bool[]
+            data = new bool[readCount];
+            for (int i = 0, k = 0; i < readCount; i++)
             {
-                //Strip PDU header and convert data into bool[]
-                data = new bool[readCount];
-                for (int i = 0, k = 0; i < readCount; i++)
-                {
-                    data[i] = ((responsePdu[k + 3] & (byte)(0x01 << (i % 8))) > 0) ? true : false;
-                    k = (i + 1) / 8;
-                }
+                data[i] = ((responsePdu[k + 3] & (byte)(0x01 << (i % 8))) > 0) ? true : false;
+                k = (i + 1) / 8;
             }
-            return ret;
+
+            return data;
         }
 
         /// <summary>
@@ -99,23 +96,21 @@ namespace WagoModbusNet
         /// <param name="readCount"></param>
         /// <param name="data"></param>
         /// <returns>wmnRet</returns>
-        public wmnRet ReadDiscreteInputs(byte id, ushort startAddress, ushort readCount, out bool[] data)
+        public bool[] ReadDiscreteInputs(byte id, ushort startAddress, ushort readCount)
         {
-            data = null;
-            byte[] responsePdu; //Response PDU
-            // Build common part of modbus request, decorate it with transport layer specific header, send request and get response PDU back 
-            wmnRet ret = SendModbusRequest(id, ModbusFunctionCodes.fc2_ReadDiscreteInputs, startAddress, readCount, 0, 0, null, out responsePdu);
-            if (ret.Value == 0)
+            bool[] data = null;
+            byte[] responsePDU = 
+                SendModbusRequest(id, ModbusFunctionCodes.fc2_ReadDiscreteInputs, startAddress, readCount, 0, 0, null);
+
+            //Strip PDU header and convert data into bool[]
+            data = new bool[readCount];
+            for (int i = 0, k = 0; i < readCount; i++)
             {
-                //Strip PDU header and convert data into bool[]
-                data = new bool[readCount];
-                for (int i = 0, k = 0; i < readCount; i++)
-                {
-                    data[i] = ((responsePdu[k + 3] & (byte)(0x01 << (i % 8))) > 0) ? true : false;
-                    k = (i + 1) / 8;
-                }
+                data[i] = ((responsePDU[k + 3] & (byte)(0x01 << (i % 8))) > 0) ? true : false;
+                k = (i + 1) / 8;
             }
-            return ret;
+
+            return data;
         }
 
         /// <summary>
@@ -127,26 +122,23 @@ namespace WagoModbusNet
         /// <param name="readCount"></param>
         /// <param name="data"></param>
         /// <returns>wmnRet</returns>
-        public wmnRet ReadHoldingRegisters(byte id, ushort startAddress, ushort readCount, out ushort[] data)
+        public ushort[] ReadHoldingRegisters(byte id, ushort startAddress, ushort readCount)
         {
-            data = null;
-            byte[] responsePdu; //Response PDU
-            // Build common part of modbus request, decorate it with transport layer specific header, send request and get response PDU back 
-            wmnRet ret = SendModbusRequest(id, ModbusFunctionCodes.fc3_ReadHoldingRegisters, startAddress, readCount, 0, 0, null, out responsePdu);
-            if (ret.Value == 0)
+            ushort[] data = null;
+            byte[] responsePDU = 
+                SendModbusRequest(id, ModbusFunctionCodes.fc3_ReadHoldingRegisters, startAddress, readCount, 0, 0, null);
+            //Strip PDU header and convert data into ushort[]
+            byte[] tmp = new byte[2];
+            int count = (responsePDU[2] / 2);
+            data = new ushort[count];
+            for (int i = 0; i < count; i++)
             {
-                //Strip PDU header and convert data into ushort[]
-                byte[] tmp = new byte[2];
-                int count = (responsePdu[2] / 2);
-                data = new ushort[count];
-                for (int i = 0; i < count; i++)
-                {
-                    tmp[0] = responsePdu[4 + (2 * i)];
-                    tmp[1] = responsePdu[3 + (2 * i)];
-                    data[i] = BitConverter.ToUInt16(tmp, 0);
-                }
+                tmp[0] = responsePDU[4 + (2 * i)];
+                tmp[1] = responsePDU[3 + (2 * i)];
+                data[i] = BitConverter.ToUInt16(tmp, 0);
             }
-            return ret;
+
+            return data;
         }
 
         /// <summary>
@@ -158,26 +150,24 @@ namespace WagoModbusNet
         /// <param name="readCount">      </param>
         /// <param name="data">out ushort[]</param>
         /// <returns>wmnRet</returns>
-        public wmnRet ReadInputRegisters(byte id, ushort startAddress, ushort readCount, out ushort[] data)
+        public ushort[] ReadInputRegisters(byte id, ushort startAddress, ushort readCount)
         {
-            data = null;
-            byte[] responsePdu; //Response PDU
-            // Build common part of modbus request, decorate it with transport layer specific header, send request and get response PDU back 
-            wmnRet ret = SendModbusRequest(id, ModbusFunctionCodes.fc4_ReadInputRegisters, startAddress, readCount, 0, 0, null, out responsePdu);
-            if (ret.Value == 0)
+            ushort[] data = null;
+            byte[] responsePDU = 
+                SendModbusRequest(id, ModbusFunctionCodes.fc4_ReadInputRegisters, startAddress, readCount, 0, 0, null);
+
+            //Strip PDU header and convert data into ushort[]
+            byte[] tmp = new byte[2];
+            int count = (responsePDU[2] / 2);
+            data = new ushort[count];
+            for (int i = 0; i < count; i++)
             {
-                //Strip PDU header and convert data into ushort[]
-                byte[] tmp = new byte[2];
-                int count = (responsePdu[2] / 2);
-                data = new ushort[count];
-                for (int i = 0; i < count; i++)
-                {
-                    tmp[0] = responsePdu[4 + (2 * i)];
-                    tmp[1] = responsePdu[3 + (2 * i)];
-                    data[i] = BitConverter.ToUInt16(tmp, 0);
-                }
+                tmp[0] = responsePDU[4 + (2 * i)];
+                tmp[1] = responsePDU[3 + (2 * i)];
+                data[i] = BitConverter.ToUInt16(tmp, 0);
             }
-            return ret;
+
+            return data;
         }
 
         /// <summary>
@@ -187,13 +177,12 @@ namespace WagoModbusNet
         /// <param name="startAddress"></param>
         /// <param name="data"></param>
         /// <returns>wmnRet</returns>
-        public wmnRet WriteSingleCoil(byte id, ushort startAddress, bool data)
+        public void WriteSingleCoil(byte id, ushort startAddress, bool data)
         {
             // Convert data to write into array of byte with the correct byteorder
             byte[] writeData = new byte[1];
             writeData[0] = (data) ? (byte)0xFF : (byte)0x00;
-            byte[] responsePdu = null; // Response PDU
-            return SendModbusRequest(id, ModbusFunctionCodes.fc5_WriteSingleCoil, 0, 0, startAddress, 1, writeData, out responsePdu);
+            SendModbusRequest(id, ModbusFunctionCodes.fc5_WriteSingleCoil, 0, 0, startAddress, 1, writeData);
         }
 
         /// <summary>
@@ -203,13 +192,14 @@ namespace WagoModbusNet
         /// <param name="startAddress"></param>
         /// <param name="data"></param>
         /// <returns>wmnRet</returns>
-        public wmnRet WriteSingleRegister(byte id, ushort startAddress, ushort data)
+        public void WriteSingleRegister(byte id, ushort startAddress, ushort data)
         {
             // Convert data to write into array of byte with the correct byteorder
             byte[] writeData = BitConverter.GetBytes(data);
-            byte[] responsePdu = null; // Response PDU
-            return SendModbusRequest(id, ModbusFunctionCodes.fc6_WriteSingleRegister, 0, 0, startAddress, 1, writeData, out responsePdu);
+            SendModbusRequest(id, ModbusFunctionCodes.fc6_WriteSingleRegister, 0, 0, startAddress, 1, writeData);
         }
+
+        // TODO: What is status? out arguments are generally bad practice.
 
         /// <summary>
         /// FC11 - Get Comm Event Counter
@@ -218,27 +208,24 @@ namespace WagoModbusNet
         /// <param name="status"> return 0 for ready to process next requst or 0xFFFF when device busy</param>
         /// <param name="eventCount">number of successful processed Modbus-Requests</param>
         /// <returns>wmnRet</returns>
-        public wmnRet GetCommEventCounter(byte id, out ushort status, out ushort eventCount)
+        public ushort GetCommEventCounter(byte id, out ushort status)
         {
             status = 0;
-            eventCount = 0;
-            byte[] responsePdu; //Response PDU
-            // Build common part of modbus request, decorate it with transport layer specific header, send request and get response PDU back 
-            wmnRet ret = SendModbusRequest(id, ModbusFunctionCodes.fc11_GetCommEventCounter, 0, 0, 0, 0, null, out responsePdu);
-            if (ret.Value == 0)
-            {
-                //Strip PDU header and convert data into ushort[]
-                byte[] tmp = new byte[2];
-                //Extract status
-                tmp[0] = responsePdu[3];
-                tmp[1] = responsePdu[2];
-                status = BitConverter.ToUInt16(tmp, 0);
-                //Extract eventCount
-                tmp[0] = responsePdu[5];
-                tmp[1] = responsePdu[4];
-                eventCount = BitConverter.ToUInt16(tmp, 0);
-            }
-            return ret;
+            ushort eventCount = 0;
+            byte[] responsePdu = SendModbusRequest(id, ModbusFunctionCodes.fc11_GetCommEventCounter, 0, 0, 0, 0, null);
+
+            //Strip PDU header and convert data into ushort[]
+            byte[] tmp = new byte[2];
+            //Extract status
+            tmp[0] = responsePdu[3];
+            tmp[1] = responsePdu[2];
+            status = BitConverter.ToUInt16(tmp, 0);
+            //Extract eventCount
+            tmp[0] = responsePdu[5];
+            tmp[1] = responsePdu[4];
+            eventCount = BitConverter.ToUInt16(tmp, 0);
+
+            return eventCount;
         }
 
         /// <summary>
@@ -248,7 +235,7 @@ namespace WagoModbusNet
         /// <param name="startAddress"></param>
         /// <param name="data"></param>
         /// <returns>wmnRet</returns>
-        public wmnRet WriteMultipleCoils(byte id, ushort startAddress, bool[] data)
+        public void WriteMultipleCoils(byte id, ushort startAddress, bool[] data)
         {
             // Convert data to write into array of byte with the correct byteorder
             byte[] writeData = ((data.Length % 8) == 0) ? new byte[data.Length / 8] : new byte[(data.Length / 8) + 1];
@@ -257,8 +244,8 @@ namespace WagoModbusNet
                 if ((i > 0) && ((i % 8) == 0)) k++;
                 if (data[i]) writeData[k] = (byte)(writeData[k] | (byte)(0x01 << (i % 8)));
             }
-            byte[] responsePdu = null; // Response PDU
-            return SendModbusRequest(id, ModbusFunctionCodes.fc15_WriteMultipleCoils, 0, 0, startAddress, (ushort)data.Length, writeData, out responsePdu);
+            
+            SendModbusRequest(id, ModbusFunctionCodes.fc15_WriteMultipleCoils, 0, 0, startAddress, (ushort)data.Length, writeData);
         }
 
         /// <summary>
@@ -269,7 +256,7 @@ namespace WagoModbusNet
         /// <param name="writeCount"></param>
         /// <param name="data"></param>
         /// <returns>wmnRet</returns>
-        public wmnRet WriteMultipleRegisters(byte id, ushort startAddress, ushort[] data)
+        public void WriteMultipleRegisters(byte id, ushort startAddress, ushort[] data)
         {
             // Convert data to write into array of byte with the correct byteorder
             byte[] writeData = new byte[data.Length * 2];
@@ -281,9 +268,11 @@ namespace WagoModbusNet
                 writeData[k + 1] = tmp[0];
                 k += 2;
             }
-            byte[] responsePdu = null; // Response PDU
-            return SendModbusRequest(id, ModbusFunctionCodes.fc16_WriteMultipleRegisters, 0, 0, startAddress, (ushort)data.Length, writeData, out responsePdu);
+            
+            SendModbusRequest(id, ModbusFunctionCodes.fc16_WriteMultipleRegisters, 0, 0, startAddress, (ushort)data.Length, writeData);
         }
+
+        // TODO: confusing method
 
         /// <summary>
         /// FC22 - Mask Write Register
@@ -297,7 +286,7 @@ namespace WagoModbusNet
         /// <param name="andMask"></param>
         /// <param name="orMask"></param>
         /// <returns>wmnRet</returns>
-        public wmnRet MaskWriteRegister(byte id, ushort startAddress, ushort andMask, ushort orMask)
+        public void MaskWriteRegister(byte id, ushort startAddress, ushort andMask, ushort orMask)
         {
             // Convert data to write into array of byte with the correct byteorder
             byte[] writeData = new byte[4];
@@ -308,8 +297,7 @@ namespace WagoModbusNet
             tmp = BitConverter.GetBytes(orMask);
             writeData[2] = tmp[0];
             writeData[3] = tmp[1];
-            byte[] responsePdu = null; // Response PDU
-            return SendModbusRequest(id, ModbusFunctionCodes.fc22_MaskWriteRegister, 0, 0, startAddress, 4, writeData, out responsePdu);
+            SendModbusRequest(id, ModbusFunctionCodes.fc22_MaskWriteRegister, 0, 0, startAddress, 4, writeData);
         }
 
         /// <summary>
@@ -322,8 +310,9 @@ namespace WagoModbusNet
         /// <param name="writeData"></param>
         /// <param name="readData"></param>
         /// <returns>wmnRet</returns>
-        public wmnRet ReadWriteMultipleRegisters(byte id, ushort readAddress, ushort readCount, ushort writeAddress, ushort[] writeData, out ushort[] readData)
+        public ushort[] ReadWriteMultipleRegisters(byte id, ushort readAddress, ushort readCount, ushort writeAddress, ushort[] writeData)
         {
+            ushort[] readData = null;
             // Convert data to write into array of byte with the correct byteorder
             byte[] writeBuffer = new byte[writeData.Length * 2];
             byte[] tmp;
@@ -334,32 +323,29 @@ namespace WagoModbusNet
                 writeBuffer[k + 1] = tmp[0];
                 k += 2;
             }
-            readData = null;
-            byte[] responsePdu; //Response PDU
-            // Build common part of modbus request, decorate it with transport layer specific header, send request and get response PDU back 
-            wmnRet ret = SendModbusRequest(id, ModbusFunctionCodes.fc23_ReadWriteMultipleRegisters, readAddress, readCount, writeAddress, (ushort)writeData.Length, writeBuffer, out responsePdu);
-            if (ret.Value == 0)
+
+            byte[] responsePdu = SendModbusRequest(id, ModbusFunctionCodes.fc23_ReadWriteMultipleRegisters, readAddress, readCount, writeAddress, (ushort)writeData.Length, writeBuffer);
+
+            //Strip PDU header and convert data into ushort[]
+            byte[] buf = new byte[2];
+            int count = (responsePdu[2] / 2);
+            readData = new ushort[count];
+            for (int i = 0; i < count; i++)
             {
-                //Strip PDU header and convert data into ushort[]
-                byte[] buf = new byte[2];
-                int count = (responsePdu[2] / 2);
-                readData = new ushort[count];
-                for (int i = 0; i < count; i++)
-                {
-                    buf[0] = responsePdu[4 + (2 * i)];
-                    buf[1] = responsePdu[3 + (2 * i)];
-                    readData[i] = BitConverter.ToUInt16(buf, 0);
-                }
+                buf[0] = responsePdu[4 + (2 * i)];
+                buf[1] = responsePdu[3 + (2 * i)];
+                readData[i] = BitConverter.ToUInt16(buf, 0);
             }
-            return ret;
+
+            return readData;
         }
 
 
         // TODO: too many arguments
         // Build common part of modbus request, decorate it with transport layer specific header, send request and get response PDU back 
-        public wmnRet SendModbusRequest(byte id, ModbusFunctionCodes functionCode, ushort readAddress, ushort readCount, ushort writeAddress, ushort writeCount, byte[] writeData, out byte[] responsePDU)
+        public byte[] SendModbusRequest(byte id, ModbusFunctionCodes functionCode, ushort readAddress, ushort readCount, ushort writeAddress, ushort writeCount, byte[] writeData)
         {
-            responsePDU = null;
+            byte[] responsePDU = null;
             // Build common part of modbus request
             byte[] requestPDU = BuildRequestPDU(id, functionCode, readAddress, readCount, writeAddress, writeCount, writeData);
 
@@ -368,7 +354,7 @@ namespace WagoModbusNet
 
             // Send modbus request and return response 
             responsePDU = Query(requestADU);
-            return new wmnRet((int)wmnErrorOffset.wmnSUCCESS, "ret");
+            return responsePDU;
         }
 
 
@@ -383,7 +369,7 @@ namespace WagoModbusNet
         private byte[] BuildRequestPDU(byte id, ModbusFunctionCodes functionCode, ushort readAddress, ushort readCount, ushort writeAddress, ushort writeCount, byte[] writeData)
         {
             byte[] help; // Used to convert ushort into bytes
-            byte[] reqPdu = null;
+            byte[] requestPDU = null;
 
             switch (functionCode)
             {
@@ -391,48 +377,48 @@ namespace WagoModbusNet
                 case ModbusFunctionCodes.fc2_ReadDiscreteInputs:
                 case ModbusFunctionCodes.fc3_ReadHoldingRegisters:
                 case ModbusFunctionCodes.fc4_ReadInputRegisters:
-                    reqPdu = new byte[6];
+                    requestPDU = new byte[6];
                     // Build request header 
-                    reqPdu[0] = id;                         // ID: SlaveID(RTU/ASCII) or UnitID(TCP/UDP)
-                    reqPdu[1] = (byte)functionCode;         // Modbus-Function-Code
+                    requestPDU[0] = id;                         // ID: SlaveID(RTU/ASCII) or UnitID(TCP/UDP)
+                    requestPDU[1] = (byte)functionCode;         // Modbus-Function-Code
                     help = BitConverter.GetBytes(readAddress);
-                    reqPdu[2] = help[1];					// Start read address -Hi
-                    reqPdu[3] = help[0];					// Start read address -Lo
+                    requestPDU[2] = help[1];					// Start read address -Hi
+                    requestPDU[3] = help[0];					// Start read address -Lo
                     help = BitConverter.GetBytes(readCount);
-                    reqPdu[4] = help[1];				    // Number of coils or register to read -Hi
-                    reqPdu[5] = help[0];				    // Number of coils or register to read -Lo  
+                    requestPDU[4] = help[1];				    // Number of coils or register to read -Hi
+                    requestPDU[5] = help[0];				    // Number of coils or register to read -Lo  
                     break;
 
                 case ModbusFunctionCodes.fc5_WriteSingleCoil:
-                    reqPdu = new byte[6];
+                    requestPDU = new byte[6];
                     // Build request header 
-                    reqPdu[0] = id;                         // ID: SlaveID(RTU/ASCII) or UnitID(TCP/UDP)
-                    reqPdu[1] = 0x05;                       // Modbus-Function-Code: fc5_WriteSingleCoil
+                    requestPDU[0] = id;                         // ID: SlaveID(RTU/ASCII) or UnitID(TCP/UDP)
+                    requestPDU[1] = 0x05;                       // Modbus-Function-Code: fc5_WriteSingleCoil
                     help = BitConverter.GetBytes(writeAddress);
-                    reqPdu[2] = help[1];					// Address of coil to force -Hi
-                    reqPdu[3] = help[0];					// Address of coil to force -Lo
+                    requestPDU[2] = help[1];					// Address of coil to force -Hi
+                    requestPDU[3] = help[0];					// Address of coil to force -Lo
                     // Copy data
-                    reqPdu[4] = writeData[0];				// Output value -Hi  ( 0xFF or 0x00 )
-                    reqPdu[5] = 0x00;				        // Output value -Lo  ( const: 0x00  ) 
+                    requestPDU[4] = writeData[0];				// Output value -Hi  ( 0xFF or 0x00 )
+                    requestPDU[5] = 0x00;				        // Output value -Lo  ( const: 0x00  ) 
                     break;
 
                 case ModbusFunctionCodes.fc6_WriteSingleRegister:
-                    reqPdu = new byte[6];
+                    requestPDU = new byte[6];
                     // Build request header 
-                    reqPdu[0] = id;                         // ID: SlaveID(RTU/ASCII) or UnitID(TCP/UDP)
-                    reqPdu[1] = 0x06;                       // Modbus-Function-Code: fc6_WriteSingleRegister
+                    requestPDU[0] = id;                         // ID: SlaveID(RTU/ASCII) or UnitID(TCP/UDP)
+                    requestPDU[1] = 0x06;                       // Modbus-Function-Code: fc6_WriteSingleRegister
                     help = BitConverter.GetBytes(writeAddress);
-                    reqPdu[2] = help[1];					// Address of register to force -Hi
-                    reqPdu[3] = help[0];					// Address of register to force -Lo
-                    reqPdu[4] = writeData[1];				// Output value -Hi  
-                    reqPdu[5] = writeData[0];				// Output value -Lo  
+                    requestPDU[2] = help[1];					// Address of register to force -Hi
+                    requestPDU[3] = help[0];					// Address of register to force -Lo
+                    requestPDU[4] = writeData[1];				// Output value -Hi  
+                    requestPDU[5] = writeData[0];				// Output value -Lo  
                     break;
 
                 case ModbusFunctionCodes.fc11_GetCommEventCounter:
-                    reqPdu = new byte[2];
+                    requestPDU = new byte[2];
                     // Build request header 
-                    reqPdu[0] = id;                         // ID: SlaveID(RTU/ASCII) or UnitID(TCP/UDP)
-                    reqPdu[1] = 0x0B;                       // Modbus-Function-Code: fc11_GetCommEventCounter
+                    requestPDU[0] = id;                         // ID: SlaveID(RTU/ASCII) or UnitID(TCP/UDP)
+                    requestPDU[1] = 0x0B;                       // Modbus-Function-Code: fc11_GetCommEventCounter
                     break;
 
                 case ModbusFunctionCodes.fc15_WriteMultipleCoils:
@@ -441,85 +427,85 @@ namespace WagoModbusNet
                     {
                         byteCount += 1;
                     }
-                    reqPdu = new byte[7 + byteCount];
+                    requestPDU = new byte[7 + byteCount];
                     // Build request header
-                    reqPdu[0] = id;                         // ID: SlaveID(RTU/ASCII) or UnitID(TCP/UDP)
-                    reqPdu[1] = 0x0F;                       // Modbus-Function-Code: fc15_WriteMultipleCoils
+                    requestPDU[0] = id;                         // ID: SlaveID(RTU/ASCII) or UnitID(TCP/UDP)
+                    requestPDU[1] = 0x0F;                       // Modbus-Function-Code: fc15_WriteMultipleCoils
                     help = BitConverter.GetBytes(writeAddress);
-                    reqPdu[2] = help[1];					// Start address of coils to force -Hi
-                    reqPdu[3] = help[0];					// Start address of coils to force -Lo
+                    requestPDU[2] = help[1];					// Start address of coils to force -Hi
+                    requestPDU[3] = help[0];					// Start address of coils to force -Lo
                     help = BitConverter.GetBytes(writeCount);
-                    reqPdu[4] = help[1];				    // Number of coils to write -Hi 
-                    reqPdu[5] = help[0];				    // Number of coils to write -Lo  
-                    reqPdu[6] = byteCount;				    // Number of bytes to write                    
+                    requestPDU[4] = help[1];				    // Number of coils to write -Hi 
+                    requestPDU[5] = help[0];				    // Number of coils to write -Lo  
+                    requestPDU[6] = byteCount;				    // Number of bytes to write                    
                     // Copy data
                     for (int i = 0; i < byteCount; i++)
                     {
-                        reqPdu[7 + i] = writeData[i];
+                        requestPDU[7 + i] = writeData[i];
                     }
                     break;
 
                 case ModbusFunctionCodes.fc16_WriteMultipleRegisters:
-                    reqPdu = new byte[7 + (writeCount * 2)];
+                    requestPDU = new byte[7 + (writeCount * 2)];
                     // Build request header 
-                    reqPdu[0] = id;                         // ID: SlaveID(RTU/ASCII) or UnitID(TCP/UDP)
-                    reqPdu[1] = 0x10;                       // Modbus-Function-Code: fc16_WriteMultipleRegisters
+                    requestPDU[0] = id;                         // ID: SlaveID(RTU/ASCII) or UnitID(TCP/UDP)
+                    requestPDU[1] = 0x10;                       // Modbus-Function-Code: fc16_WriteMultipleRegisters
                     help = BitConverter.GetBytes(writeAddress);
-                    reqPdu[2] = help[1];					// Start address of coils to force -Hi
-                    reqPdu[3] = help[0];					// Start address of coils to force -Lo
+                    requestPDU[2] = help[1];					// Start address of coils to force -Hi
+                    requestPDU[3] = help[0];					// Start address of coils to force -Lo
                     help = BitConverter.GetBytes(writeCount);
-                    reqPdu[4] = help[1];				    // Number of register to write -Hi 
-                    reqPdu[5] = help[0];				    // Number of register to write -Lo  
-                    reqPdu[6] = (byte)(writeCount * 2);		// Number of bytes to write                    
+                    requestPDU[4] = help[1];				    // Number of register to write -Hi 
+                    requestPDU[5] = help[0];				    // Number of register to write -Lo  
+                    requestPDU[6] = (byte)(writeCount * 2);		// Number of bytes to write                    
                     // Copy data
                     for (int i = 0; i < (writeCount * 2); i++)
                     {
-                        reqPdu[7 + i] = writeData[i];
+                        requestPDU[7 + i] = writeData[i];
                     }
                     break;
 
 
                 case ModbusFunctionCodes.fc22_MaskWriteRegister:
-                    reqPdu = new byte[8];
+                    requestPDU = new byte[8];
                     // Build request header 
-                    reqPdu[0] = id;                         // ID: SlaveID(RTU/ASCII) or UnitID(TCP/UDP)
-                    reqPdu[1] = 0x16;                       // Modbus-Function-Code: fc22_MaskWriteRegister
+                    requestPDU[0] = id;                         // ID: SlaveID(RTU/ASCII) or UnitID(TCP/UDP)
+                    requestPDU[1] = 0x16;                       // Modbus-Function-Code: fc22_MaskWriteRegister
                     help = BitConverter.GetBytes(writeAddress);
-                    reqPdu[2] = help[1];					// Address of register to force -Hi
-                    reqPdu[3] = help[0];					// Address of register to force -Lo
-                    reqPdu[4] = writeData[1];				// And_Mask -Hi  
-                    reqPdu[5] = writeData[0];				// And_Mask -Lo  
-                    reqPdu[6] = writeData[3];				// Or_Mask -Hi  
-                    reqPdu[7] = writeData[2];				// Or_Mask -Lo  
+                    requestPDU[2] = help[1];					// Address of register to force -Hi
+                    requestPDU[3] = help[0];					// Address of register to force -Lo
+                    requestPDU[4] = writeData[1];				// And_Mask -Hi  
+                    requestPDU[5] = writeData[0];				// And_Mask -Lo  
+                    requestPDU[6] = writeData[3];				// Or_Mask -Hi  
+                    requestPDU[7] = writeData[2];				// Or_Mask -Lo  
                     break;
 
                 case ModbusFunctionCodes.fc23_ReadWriteMultipleRegisters:
-                    reqPdu = new byte[11 + (writeCount * 2)];
+                    requestPDU = new byte[11 + (writeCount * 2)];
                     // Build request header 
-                    reqPdu[0] = id;                         // ID: SlaveID(RTU/ASCII) or UnitID(TCP/UDP)
-                    reqPdu[1] = 0x17;                       // Modbus-Function-Code: fc23_ReadWriteMultipleRegisters
+                    requestPDU[0] = id;                         // ID: SlaveID(RTU/ASCII) or UnitID(TCP/UDP)
+                    requestPDU[1] = 0x17;                       // Modbus-Function-Code: fc23_ReadWriteMultipleRegisters
                     help = BitConverter.GetBytes(readAddress);
-                    reqPdu[2] = help[1];					// Start read address -Hi
-                    reqPdu[3] = help[0];					// Start read address -Lo
+                    requestPDU[2] = help[1];					// Start read address -Hi
+                    requestPDU[3] = help[0];					// Start read address -Lo
                     help = BitConverter.GetBytes(readCount);
-                    reqPdu[4] = help[1];				    // Number of register to read -Hi
-                    reqPdu[5] = help[0];				    // Number of register to read -Lo           
+                    requestPDU[4] = help[1];				    // Number of register to read -Hi
+                    requestPDU[5] = help[0];				    // Number of register to read -Lo           
                     help = BitConverter.GetBytes(writeAddress);
-                    reqPdu[6] = help[1];				    // Start write address -Hi
-                    reqPdu[7] = help[0];				    // Start write address -Lo
+                    requestPDU[6] = help[1];				    // Start write address -Hi
+                    requestPDU[7] = help[0];				    // Start write address -Lo
                     help = BitConverter.GetBytes(writeCount);
-                    reqPdu[8] = help[1];				    // Number of register to write -Hi
-                    reqPdu[9] = help[0];				    // Number of register to write -Lo
-                    reqPdu[10] = (byte)(writeCount * 2);     // Number of bytes to write
+                    requestPDU[8] = help[1];				    // Number of register to write -Hi
+                    requestPDU[9] = help[0];				    // Number of register to write -Lo
+                    requestPDU[10] = (byte)(writeCount * 2);     // Number of bytes to write
                     // Copy data
                     for (int i = 0; i < (writeCount * 2); i++)
                     {
-                        reqPdu[11 + i] = writeData[i];
+                        requestPDU[11 + i] = writeData[i];
                     }
                     break;
             } // switch
 
-            return reqPdu;
+            return requestPDU;
         }
     }
 }
