@@ -92,9 +92,9 @@ namespace WagoModbusNet
             {
                 // Timeout expired 
                 _connected = false;
-                _socket.Close(); // Implizit .EndConnect free ressources 
+                _socket.Close(); // Implicit .EndConnect free ressources 
                 _socket = null;
-                throw new GeneralWMNException("TIMEOUT-ERROR: Timeout expired while 'Try to connect ...'");
+                throw new ConnectionTimeoutException();
             }
         }
 
@@ -149,7 +149,7 @@ namespace WagoModbusNet
             byte[] responsePdu = null;  //Assign null to make compiler silent
             if (_ip == null) // TODO: remove check
             {
-                throw new GeneralWMNException("DNS error: Could not resolve Ip-Address for " + _hostname);
+                throw new IpDnsException(_hostname);
                 // TODO: Since IP is created from _hostname, the exception should be thrown when _ip is assigned
             }
             try

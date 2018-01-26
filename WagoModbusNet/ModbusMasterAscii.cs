@@ -94,11 +94,11 @@ namespace WagoModbusNet
             byte[] responsePdu = null;
             // Check minimal response length 
             if (respRawLength < 13)
-                throw new GeneralWMNException("Error: Invalid response telegram, did not receive minimal length of 13 bytes");
+                throw new InvalidResponseTelegramException("Error: Invalid response telegram, did not receive minimal length of 13 bytes");
             
             // Check "START_OF_FRAME_CHAR" and "END_OF_FRAME_CHAR's"
             if ((respRaw[0] != 0x3A) | (respRaw[respRawLength - 2] != 0x0D) | (respRaw[respRawLength - 1] != 0x0A))
-                throw new GeneralWMNException("Error: Invalid response telegram, could not find 'START_OF_FRAME_CHAR' or 'END_OF_FRAME_CHARs'");
+                throw new InvalidResponseTelegramException("Error: Invalid response telegram, could not find 'START_OF_FRAME_CHAR' or 'END_OF_FRAME_CHARs'");
 
             // Convert ASCII telegram to binary
             byte[] buffer = new byte[(respRawLength - 3) / 2];
@@ -120,7 +120,7 @@ namespace WagoModbusNet
             lrc = (byte)(lrc * (-1));
             // Check LRC
             if (buffer[buffer.Length - 1] != lrc)
-                throw new GeneralWMNException("Error: Invalid response telegram, LRC check failed");
+                throw new InvalidResponseTelegramException("Error: Invalid response telegram, LRC check failed");
             
             // Is response a "modbus exception response"
             if ((buffer[1] & 0x80) > 0)

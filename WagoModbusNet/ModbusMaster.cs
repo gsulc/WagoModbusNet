@@ -58,6 +58,7 @@ namespace WagoModbusNet
         public abstract void Connect();
         public abstract void Disconnect();
 
+
         /// <summary>
         /// FC1 - Read Coils
         /// WAGO coupler and controller do not differ between FC1 and FC2
@@ -67,8 +68,7 @@ namespace WagoModbusNet
         /// <param name="id">Unit-Id or Slave-Id depending underlaying transport layer</param>
         /// <param name="startAddress"></param>
         /// <param name="readCount"></param>
-        /// <param name="data"></param>
-        /// <returns>wmnRet</returns>
+        /// <returns></returns>
         public bool[] ReadCoils(byte id, ushort startAddress, ushort readCount)
         {
             bool[] data = null;
@@ -95,7 +95,7 @@ namespace WagoModbusNet
         /// <param name="startAddress"></param>
         /// <param name="readCount"></param>
         /// <param name="data"></param>
-        /// <returns>wmnRet</returns>
+        /// <returns></returns>
         public bool[] ReadDiscreteInputs(byte id, ushort startAddress, ushort readCount)
         {
             bool[] data = null;
@@ -121,7 +121,7 @@ namespace WagoModbusNet
         /// <param name="startAddress"></param>
         /// <param name="readCount"></param>
         /// <param name="data"></param>
-        /// <returns>wmnRet</returns>
+        /// <returns></returns>
         public ushort[] ReadHoldingRegisters(byte id, ushort startAddress, ushort readCount)
         {
             ushort[] data = null;
@@ -146,10 +146,9 @@ namespace WagoModbusNet
         /// WAGO coupler and controller do not differ between FC3 and FC4
         /// </summary>
         /// <param name="id">Unit-Id or Slave-Id depending underlaying transport layer</param>
-        /// <param name="startAddress">     </param>
-        /// <param name="readCount">      </param>
-        /// <param name="data">out ushort[]</param>
-        /// <returns>wmnRet</returns>
+        /// <param name="startAddress"></param>
+        /// <param name="readCount"></param>
+        /// <returns></returns>
         public ushort[] ReadInputRegisters(byte id, ushort startAddress, ushort readCount)
         {
             ushort[] data = null;
@@ -176,7 +175,7 @@ namespace WagoModbusNet
         /// <param name="id">Unit-Id or Slave-Id depending underlaying transport layer</param>
         /// <param name="startAddress"></param>
         /// <param name="data"></param>
-        /// <returns>wmnRet</returns>
+        /// <returns></returns>
         public void WriteSingleCoil(byte id, ushort startAddress, bool data)
         {
             // Convert data to write into array of byte with the correct byteorder
@@ -191,7 +190,7 @@ namespace WagoModbusNet
         /// <param name="id">Unit-Id or Slave-Id depending underlaying transport layer</param>
         /// <param name="startAddress"></param>
         /// <param name="data"></param>
-        /// <returns>wmnRet</returns>
+        /// <returns></returns>
         public void WriteSingleRegister(byte id, ushort startAddress, ushort data)
         {
             // Convert data to write into array of byte with the correct byteorder
@@ -207,7 +206,7 @@ namespace WagoModbusNet
         /// <param name="id">Unit-Id or Slave-Id depending underlaying transport layer</param>
         /// <param name="status"> return 0 for ready to process next requst or 0xFFFF when device busy</param>
         /// <param name="eventCount">number of successful processed Modbus-Requests</param>
-        /// <returns>wmnRet</returns>
+        /// <returns></returns>
         public ushort GetCommEventCounter(byte id, out ushort status)
         {
             status = 0;
@@ -234,7 +233,7 @@ namespace WagoModbusNet
         /// <param name="id">Unit-Id or Slave-Id depending underlaying transport layer</param>
         /// <param name="startAddress"></param>
         /// <param name="data"></param>
-        /// <returns>wmnRet</returns>
+        /// <returns></returns>
         public void WriteMultipleCoils(byte id, ushort startAddress, bool[] data)
         {
             // Convert data to write into array of byte with the correct byteorder
@@ -255,7 +254,7 @@ namespace WagoModbusNet
         /// <param name="startAddress"></param>
         /// <param name="writeCount"></param>
         /// <param name="data"></param>
-        /// <returns>wmnRet</returns>
+        /// <returns></returns>
         public void WriteMultipleRegisters(byte id, ushort startAddress, ushort[] data)
         {
             // Convert data to write into array of byte with the correct byteorder
@@ -285,7 +284,7 @@ namespace WagoModbusNet
         /// <param name="startAddress"></param>
         /// <param name="andMask"></param>
         /// <param name="orMask"></param>
-        /// <returns>wmnRet</returns>
+        /// <returns></returns>
         public void MaskWriteRegister(byte id, ushort startAddress, ushort andMask, ushort orMask)
         {
             // Convert data to write into array of byte with the correct byteorder
@@ -309,7 +308,7 @@ namespace WagoModbusNet
         /// <param name="writeAddress"></param>
         /// <param name="writeData"></param>
         /// <param name="readData"></param>
-        /// <returns>wmnRet</returns>
+        /// <returns></returns>
         public ushort[] ReadWriteMultipleRegisters(byte id, ushort readAddress, ushort readCount, ushort writeAddress, ushort[] writeData)
         {
             ushort[] readData = null;
@@ -324,7 +323,8 @@ namespace WagoModbusNet
                 k += 2;
             }
 
-            byte[] responsePdu = SendModbusRequest(id, ModbusFunctionCodes.ReadWriteMultipleRegisters, readAddress, readCount, writeAddress, (ushort)writeData.Length, writeBuffer);
+            byte[] responsePdu = 
+                SendModbusRequest(id, ModbusFunctionCodes.ReadWriteMultipleRegisters, readAddress, readCount, writeAddress, (ushort)writeData.Length, writeBuffer);
 
             //Strip PDU header and convert data into ushort[]
             byte[] buf = new byte[2];

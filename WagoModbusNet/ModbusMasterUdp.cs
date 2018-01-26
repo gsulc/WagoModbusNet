@@ -71,17 +71,17 @@ namespace WagoModbusNet
                      *_ip = hst.AddressList[0];
                      */
                     //Async name resolving will not block but needs also up to 5 seconds until it returns 
-                    IAsyncResult ar = Dns.BeginGetHostEntry(value, null, null);
-                    ar.AsyncWaitHandle.WaitOne(); // Wait until job is done - No chance to cancel request
-                    IPHostEntry iphe = null;
+                    IAsyncResult asyncResult = Dns.BeginGetHostEntry(value, null, null);
+                    asyncResult.AsyncWaitHandle.WaitOne(); // Wait until job is done - No chance to cancel request
+                    IPHostEntry ipHostEntry = null;
                     try
                     {
-                        iphe = Dns.EndGetHostEntry(ar); //EndGetHostEntry will wait for you if calling before job is done 
+                        ipHostEntry = Dns.EndGetHostEntry(asyncResult); //EndGetHostEntry will wait for you if calling before job is done 
                     }
                     catch { }
-                    if (iphe != null)
+                    if (ipHostEntry != null)
                     {
-                        _ip = iphe.AddressList[0];
+                        _ip = ipHostEntry.AddressList[0];
                     }
                 }
             }
@@ -196,13 +196,13 @@ namespace WagoModbusNet
             byte[] responsePdu = null;
             // Check minimal response length of 8 byte
             if (respRawLength < 8)
-                throw new GeneralWMNException("Error: Invalid response telegram, do not receive minimal length of 8 byte");
+                throw new InvalidResponseTelegramException("Error: Invalid response telegram, do not receive minimal length of 8 byte");
             
             //Decode act telegram lengh
             ushort respPduLength = (ushort)((ushort)respRaw[5] | (ushort)((ushort)(respRaw[4] << 8)));
             // Check all bytes received 
             if (respRawLength < respPduLength + 6)
-                throw new GeneralWMNException("Error: Invalid response telegram, do not receive complied telegram");
+                throw new InvalidResponseTelegramException("Error: Invalid response telegram, do not receive complied telegram");
             
             // Is response a "modbus exception response"
             if ((respRaw[7] & 0x80) > 0)

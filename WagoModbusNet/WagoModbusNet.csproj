@@ -36,7 +36,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Exceptions\GeneralWMNException.cs" />
+    <Compile Include="Exceptions\ConnectionTimeoutException.cs" />
+    <Compile Include="Exceptions\InvalidResponseTelegramException.cs" />
+    <Compile Include="Exceptions\IpDnsException.cs" />
     <Compile Include="Exceptions\ModbusException.cs" />
     <Compile Include="Exceptions\NotConnectedException.cs" />
     <Compile Include="Exceptions\TimeoutException.cs" />

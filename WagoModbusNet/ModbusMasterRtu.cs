@@ -186,7 +186,7 @@ namespace WagoModbusNet
             byte[] responsePdu = null;
             // Check minimal response length 
             if (respRawLength < 5)
-                throw new GeneralWMNException("Error: Invalid response telegram. Did not receive minimal length of 5 bytes.");
+                throw new InvalidResponseTelegramException("Error: Invalid response telegram. Did not receive minimal length of 5 bytes.");
             
             // Is response a "modbus exception response"
             if ((respRaw[1] & 0x80) > 0)
@@ -195,7 +195,7 @@ namespace WagoModbusNet
             // Check CRC
             byte[] crc16 = CRC16.CalcCRC16(respRaw, respRawLength - 2);
             if ((respRaw[respRawLength - 2] != crc16[0]) | (respRaw[respRawLength - 1] != crc16[1]))
-                throw new GeneralWMNException("Error: Invalid response telegram, CRC16-check failed");
+                throw new InvalidResponseTelegramException("Error: Invalid response telegram, CRC16-check failed");
             
             // Strip ADU header and copy response PDU into output buffer 
             responsePdu = new byte[respRawLength - 2];
