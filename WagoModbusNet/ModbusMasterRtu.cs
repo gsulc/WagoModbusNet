@@ -138,14 +138,14 @@ namespace WagoModbusNet
         }
 
         // Send request and and wait for response 
-        protected override byte[] Query(byte[] requestADU)
+        protected override byte[] Query(byte[] requestAdu)
         {
-            byte[] responsePDU = null;
+            byte[] responsePdu = null;
             if (!_connected)
                 throw new NotConnectedException();
 
             // Send Request( synchron ) 
-            _serialPort.Write(requestADU, 0, requestADU.Length);
+            _serialPort.Write(requestAdu, 0, requestAdu.Length);
             _responseBuffer.Initialize();
             _responseBufferLength = 0;
             _serialPort.ReadTimeout = _timeout;
@@ -175,15 +175,15 @@ namespace WagoModbusNet
                 if (_responseBufferLength == 0)
                     throw new TimeoutException(); // TODO: This is a direct replacement. It may not be the appropriate Exception type.
                 else
-                    responsePDU = CheckResponse(_responseBuffer, _responseBufferLength);
+                    responsePdu = CheckResponse(_responseBuffer, _responseBufferLength);
             }
 
-            return responsePDU;
+            return responsePdu;
         }
         
         protected virtual byte[] CheckResponse(byte[] respRaw, int respRawLength)
         {
-            byte[] responsePDU = null;
+            byte[] responsePdu = null;
             // Check minimal response length 
             if (respRawLength < 5)
                 throw new GeneralWMNException("Error: Invalid response telegram. Did not receive minimal length of 5 bytes.");
@@ -198,27 +198,27 @@ namespace WagoModbusNet
                 throw new GeneralWMNException("Error: Invalid response telegram, CRC16-check failed");
             
             // Strip ADU header and copy response PDU into output buffer 
-            responsePDU = new byte[respRawLength - 2];
+            responsePdu = new byte[respRawLength - 2];
             for (int i = 0; i < respRawLength - 2; i++)
-                responsePDU[i] = respRaw[i];
+                responsePdu[i] = respRaw[i];
 
-            return responsePDU;
+            return responsePdu;
         }
 
-        protected override byte[] BuildRequestAdu(byte[] requestPDU)
+        protected override byte[] BuildRequestAdu(byte[] requestPdu)
         {
-            byte[] requestADU = new byte[requestPDU.Length + 2];  // Contains the modbus request protocol data unit(PDU) togehther with additional information for ModbusRTU
+            byte[] requestAdu = new byte[requestPdu.Length + 2];  // Contains the modbus request protocol data unit(PDU) togehther with additional information for ModbusRTU
             // Copy request PDU
-            for (int i = 0; i < requestPDU.Length; i++)
-                requestADU[i] = requestPDU[i];
+            for (int i = 0; i < requestPdu.Length; i++)
+                requestAdu[i] = requestPdu[i];
             
             // Calc CRC16
-            byte[] crc16 = CRC16.CalcCRC16(requestADU, requestADU.Length - 2);
+            byte[] crc16 = CRC16.CalcCRC16(requestAdu, requestAdu.Length - 2);
             // Append CRC
-            requestADU[requestADU.Length - 2] = crc16[0];
-            requestADU[requestADU.Length - 1] = crc16[1];
+            requestAdu[requestAdu.Length - 2] = crc16[0];
+            requestAdu[requestAdu.Length - 1] = crc16[1];
 
-            return requestADU;
+            return requestAdu;
         }
     }
 }

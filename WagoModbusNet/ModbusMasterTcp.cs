@@ -144,12 +144,12 @@ namespace WagoModbusNet
         }
 
         // Send request and and wait for response
-        protected override byte[] Query(byte[] requestADU) // TODO: remove check
+        protected override byte[] Query(byte[] requestAdu) 
         {
-            byte[] responePDU = null;  //Assign null to make compiler silent
-            if (_ip == null)
+            byte[] responsePdu = null;  //Assign null to make compiler silent
+            if (_ip == null) // TODO: remove check
             {
-                // return new wmnRet(-301, "DNS error: Could not resolve Ip-Address for " + _hostname);
+                throw new GeneralWMNException("DNS error: Could not resolve Ip-Address for " + _hostname);
                 // TODO: Since IP is created from _hostname, the exception should be thrown when _ip is assigned
             }
             try
@@ -161,14 +161,14 @@ namespace WagoModbusNet
                     throw new NotConnectedException();
 
                 // Send request sync
-                _socket.Send(requestADU, 0, requestADU.Length, SocketFlags.None);
+                _socket.Send(requestAdu, 0, requestAdu.Length, SocketFlags.None);
 
                 byte[] receiveBuffer = new byte[255];
 
                 // Try to receive response 
                 int byteCount = _socket.Receive(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None);
 
-                wmnRet ret = CheckResponse(receiveBuffer, byteCount, out responePDU);
+                responsePdu = CheckResponse(receiveBuffer, byteCount);
             }
             finally
             {
@@ -176,7 +176,7 @@ namespace WagoModbusNet
                     Disconnect();
             }
 
-            return responePDU;
+            return responsePdu;
         }
     }
 }

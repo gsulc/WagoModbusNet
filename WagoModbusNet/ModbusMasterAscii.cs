@@ -52,23 +52,23 @@ namespace WagoModbusNet
 
         }
 
-        protected override byte[] BuildRequestAdu(byte[] requestPDU)
+        protected override byte[] BuildRequestAdu(byte[] requestPdu)
         {
-            byte[] requestADU = new byte[((requestPDU.Length + 1) * 2) + 3];  // Contains the modbus request protocol data unit(PDU) togehther with additional information for ModbusASCII
+            byte[] requestAdu = new byte[((requestPdu.Length + 1) * 2) + 3];  // Contains the modbus request protocol data unit(PDU) togehther with additional information for ModbusASCII
             // Insert START_OF_FRAME_CHAR's
-            requestADU[0] = 0x3A;                   // START_OF_FRAME_CHAR   
+            requestAdu[0] = 0x3A;                   // START_OF_FRAME_CHAR   
 
             // Convert nibbles to ASCII, insert nibbles into ADU and calculate LRC on the fly
             byte val;
             byte lrc = 0;
-            for (int ii = 0, jj = 0; ii < (requestPDU.Length * 2); ii++)
+            for (int ii = 0, jj = 0; ii < (requestPdu.Length * 2); ii++)
             {
                 //Example : Byte = 0x5B converted to Char1 = 0x35 ('5') and Char2 = 0x42 ('B') 
-                val = ((ii % 2) == 0) ? val = (byte)((requestPDU[jj] >> 4) & 0x0F) : (byte)(requestPDU[jj] & 0x0F);
-                requestADU[1 + ii] = (val <= 0x09) ? (byte)(0x30 + val) : (byte)(0x37 + val);
+                val = ((ii % 2) == 0) ? val = (byte)((requestPdu[jj] >> 4) & 0x0F) : (byte)(requestPdu[jj] & 0x0F);
+                requestAdu[1 + ii] = (val <= 0x09) ? (byte)(0x30 + val) : (byte)(0x37 + val);
                 if ((ii % 2) != 0)
                 {
-                    lrc += requestPDU[jj];
+                    lrc += requestPdu[jj];
                     jj++;
                 }
             }
@@ -76,21 +76,21 @@ namespace WagoModbusNet
             // Convert LRC upper nibble to ASCII            
             val = (byte)((lrc >> 4) & 0x0F);
             // Insert ASCII coded upper LRC nibble into ADU
-            requestADU[requestADU.Length - 4] = (val <= 0x09) ? (byte)(0x30 + val) : (byte)(0x37 + val);
+            requestAdu[requestAdu.Length - 4] = (val <= 0x09) ? (byte)(0x30 + val) : (byte)(0x37 + val);
             // Convert LRC lower nibble to ASCII   
             val = (byte)(lrc & 0x0F);
             // Insert ASCII coded lower LRC nibble into ADU
-            requestADU[requestADU.Length - 3] = (val <= 0x09) ? (byte)(0x30 + val) : (byte)(0x37 + val);
+            requestAdu[requestAdu.Length - 3] = (val <= 0x09) ? (byte)(0x30 + val) : (byte)(0x37 + val);
             // Insert END_OF_FRAME_CHAR's
-            requestADU[requestADU.Length - 2] = 0x0D;   // END_OF_FRAME_CHAR1
-            requestADU[requestADU.Length - 1] = 0x0A;   // END_OF_FRAME_CHAR2
+            requestAdu[requestAdu.Length - 2] = 0x0D;   // END_OF_FRAME_CHAR1
+            requestAdu[requestAdu.Length - 1] = 0x0A;   // END_OF_FRAME_CHAR2
 
-            return requestADU;
+            return requestAdu;
         }
 
         protected override byte[] CheckResponse(byte[] respRaw, int respRawLength)
         {
-            byte[] responsePDU = null;
+            byte[] responsePdu = null;
             // Check minimal response length 
             if (respRawLength < 13)
                 throw new GeneralWMNException("Error: Invalid response telegram, did not receive minimal length of 13 bytes");
@@ -126,11 +126,11 @@ namespace WagoModbusNet
                 throw ModbusException.GetModbusException(buffer[2]);
 
             // Strip LRC and copy response PDU into output buffer 
-            responsePDU = new byte[buffer.Length - 1];
-            for (int i = 0; i < responsePDU.Length; i++)
-                responsePDU[i] = buffer[i];
+            responsePdu = new byte[buffer.Length - 1];
+            for (int i = 0; i < responsePdu.Length; i++)
+                responsePdu[i] = buffer[i];
 
-            return responsePDU;
+            return responsePdu;
         }
     }
 }

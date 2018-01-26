@@ -49,8 +49,6 @@
     <Compile Include="ModbusMasterTcp.cs" />
     <Compile Include="ModbusMasterUdp.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Enums\wmnErrorOffset.cs" />
-    <Compile Include="Enums\wmnRet.cs" />
     <Compile Include="Utilities\wmnConvert.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

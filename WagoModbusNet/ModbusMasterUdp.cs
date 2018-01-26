@@ -155,9 +155,9 @@ namespace WagoModbusNet
         protected IPAddress _ip = null;
 
         // Send request and and wait for response
-        protected override byte[] Query(byte[] requestADU)
+        protected override byte[] Query(byte[] requestAdu)
         {
-            byte[] responsePDU = null;
+            byte[] responsePdu = null;
             if (_ip == null) // TODO: remove check
             {
                 // return new wmnRet(-301, "DNS error: Could not resolve Ip-Address for " + _hostname);
@@ -170,7 +170,7 @@ namespace WagoModbusNet
             {
                 // Send Request( synchron )             
                 IPEndPoint ipepRemote = new IPEndPoint(_ip, _port);
-                _socket.SendTo(requestADU, ipepRemote);
+                _socket.SendTo(requestAdu, ipepRemote);
 
                 byte[] receiveBuffer = new byte[255];
                 // Remote EndPoint to capture the identity of responding host.                    
@@ -178,7 +178,7 @@ namespace WagoModbusNet
 
                 int byteCount = _socket.ReceiveFrom(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None, ref epRemote);
 
-                wmnRet ret = CheckResponse(receiveBuffer, byteCount, out responsePDU); // TODO: refactor CheckResponse
+                responsePdu = CheckResponse(receiveBuffer, byteCount);
             }
             finally
             {
@@ -186,36 +186,33 @@ namespace WagoModbusNet
                     Disconnect();
             }
 
-            return responsePDU;
+            return responsePdu;
         }
 
-        protected virtual wmnRet CheckResponse(byte[] respRaw, int respRawLength, out byte[] respPdu)
+        protected virtual byte[] CheckResponse(byte[] respRaw, int respRawLength)
         {
-            respPdu = null;
+            byte[] responsePdu = null;
             // Check minimal response length of 8 byte
             if (respRawLength < 8)
-            {
-                return new wmnRet(-500, "Error: Invalid response telegram, do not receive minimal length of 8 byte");
-            }
+                throw new GeneralWMNException("Error: Invalid response telegram, do not receive minimal length of 8 byte");
+            
             //Decode act telegram lengh
             ushort respPduLength = (ushort)((ushort)respRaw[5] | (ushort)((ushort)(respRaw[4] << 8)));
             // Check all bytes received 
             if (respRawLength < respPduLength + 6)
-            {
-                return new wmnRet(-500, "Error: Invalid response telegram, do not receive complied telegram");
-            }
+                throw new GeneralWMNException("Error: Invalid response telegram, do not receive complied telegram");
+            
             // Is response a "modbus exception response"
             if ((respRaw[7] & 0x80) > 0)
-            {
-                return new wmnRet((int)respRaw[8], "Modbus exception received: " + ((ModbusExceptionCodes)respRaw[8]).ToString());
-            }
+                throw ModbusException.GetModbusException(respRaw[8]);
+
             // Strip ADU header and copy response PDU into output buffer 
-            respPdu = new byte[respPduLength];
+            responsePdu = new byte[respPduLength];
             for (int i = 0; i < respPduLength; i++)
             {
-                respPdu[i] = respRaw[6 + i];
+                responsePdu[i] = respRaw[6 + i];
             }
-            return new wmnRet(0, "Successful executed");
+            return responsePdu;
         }
 
         // Prepare request telegram
