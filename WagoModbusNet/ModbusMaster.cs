@@ -359,10 +359,10 @@ namespace WagoModbusNet
 
 
         // Decorate common part of modbus request with transport layer specific header
-        protected abstract byte[] BuildRequestAdu(byte[] reqPdu);
+        protected abstract byte[] BuildRequestAdu(byte[] requestPdu);
 
         // Send modbus request transport layer specific and return response PDU
-        protected abstract byte[] Query(byte[] reqAdu);
+        protected abstract byte[] Query(byte[] requestAdu);
 
         // TODO: Refactor this. Too many lines and arguments; ugly switch statement. Hard to follow. Break out a new class.
         // Build common part of modbus request

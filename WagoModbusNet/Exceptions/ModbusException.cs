@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace WagoModbusNet
 {
-    public abstract class ModbusException : Exception
+    public class ModbusException : Exception
     {
         public int ExceptionCode { get; protected set; }
         public string ExceptionText { get; protected set; }
@@ -21,11 +21,11 @@ namespace WagoModbusNet
         public ModbusException(string message) : base(message) { }
         public ModbusException(string message, Exception innerException) : base(message, innerException) { }
 
-        // Factory to turn Modbus Exception Codes into throwable .net exception objects.
+        // TODO: Factory method to turn Modbus Exception Codes into detailed exception objects.
         // See modbus.org for info on exception codes
         public static ModbusException GetModbusException(int exceptionCode)
         {
-            throw new NotImplementedException(string.Format("Programmer's note: Turn Modbus Exception Code = {0} into an actual exception."));
+            return new ModbusException(string.Format("Programmer's note: Turn Modbus Exception Code = {0} into an actual exception."));
         }
     }
 }

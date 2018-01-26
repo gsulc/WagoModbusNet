@@ -164,10 +164,7 @@ namespace WagoModbusNet
                 _socket.Send(requestAdu, 0, requestAdu.Length, SocketFlags.None);
 
                 byte[] receiveBuffer = new byte[255];
-
-                // Try to receive response 
                 int byteCount = _socket.Receive(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None);
-
                 responsePdu = CheckResponse(receiveBuffer, byteCount);
             }
             finally

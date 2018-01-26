@@ -52,6 +52,7 @@ namespace WagoModbusNet
 
         }
 
+        // TODO: confusing method
         protected override byte[] BuildRequestAdu(byte[] requestPdu)
         {
             byte[] requestAdu = new byte[((requestPdu.Length + 1) * 2) + 3];  // Contains the modbus request protocol data unit(PDU) togehther with additional information for ModbusASCII

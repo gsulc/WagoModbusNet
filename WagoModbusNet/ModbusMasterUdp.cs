@@ -51,7 +51,10 @@ namespace WagoModbusNet
         private static ushort _transactionId = 4711;
         private ushort TransactionId
         {
-            get { _transactionId += 1; return _transactionId; }
+            get 
+            {
+                return ++_transactionId; 
+            }
         }
 
         protected string _hostname = "";
@@ -143,7 +146,6 @@ namespace WagoModbusNet
 
         public override void Disconnect()
         {
-            //Close socket
             if (_socket != null)
             {
                 _socket.Close();
