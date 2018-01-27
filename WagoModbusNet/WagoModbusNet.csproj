@@ -40,6 +40,16 @@
     <Compile Include="Exceptions\InvalidResponseTelegramException.cs" />
     <Compile Include="Exceptions\IpDnsException.cs" />
     <Compile Include="Exceptions\ModbusException.cs" />
+    <Compile Include="Exceptions\Modbus\AcknowledgeException.cs" />
+    <Compile Include="Exceptions\Modbus\GatewayPathUnavailableException.cs" />
+    <Compile Include="Exceptions\Modbus\GatewayTargetDeviceFailedToRespondException.cs" />
+    <Compile Include="Exceptions\Modbus\IllegalDataAddressException.cs" />
+    <Compile Include="Exceptions\Modbus\IllegalDataValueException.cs" />
+    <Compile Include="Exceptions\Modbus\IllegalFunctionException.cs" />
+    <Compile Include="Exceptions\Modbus\MemoryParityErrorException.cs" />
+    <Compile Include="Exceptions\Modbus\NegativeAcknowledgeException.cs" />
+    <Compile Include="Exceptions\Modbus\SlaveDeviceBusyException.cs" />
+    <Compile Include="Exceptions\Modbus\SlaveDeviceFailureException.cs" />
     <Compile Include="Exceptions\NotConnectedException.cs" />
     <Compile Include="Exceptions\TimeoutException.cs" />
     <Compile Include="Utilities\CRC16.cs" />
