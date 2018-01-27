@@ -52,7 +52,7 @@ namespace WagoModbusNet
         {
         }
 
-        private SerialPort _sp;             // The serial interface instance
+        private SerialPort _serialPort;             // The serial interface instance
         private string _portName = "COM1";  // Name of serial interface like "COM23" 
         public string Portname
         {
@@ -92,188 +92,133 @@ namespace WagoModbusNet
         }
 
         // Receive response helpers        
-        private byte[] _respRaw = new byte[512];
-        private int _respRawLength;
+        private byte[] _responseBuffer = new byte[512]; // TODO: inspect implementation. Should not keep around a buffer as a field.
+        private int _responseBufferLength;
 
         protected bool _connected;
         public override bool Connected
         {
             get { return _connected; }
-            set
-            {
-                if (value)
-                {
-                    _connected = (Connect().Value == 0) ? true : false;
-                }
-                else
-                {
-                    Disconnect();
-                }
-            }
         }
 
-        public override wmnRet Connect()
+        public override void Connect()
         {
             if (_connected)
                 Disconnect();
-            try
-            {
-                //Create instance
-                _sp = new SerialPort(_portName, _baudrate, _parity, _databits, _stopbits);
-                _sp.Handshake = _handshake;
-                _sp.WriteTimeout = _timeout;
-                _sp.ReadTimeout = _timeout;
-            }
-            catch (Exception e)
-            {
-                // Could not create instance of SerialPort class
-                return new wmnRet(-300, "NetException: " + e.Message);
-            }
-            try
-            {
-                _sp.Open();
-            }
-            catch (Exception e)
-            {
-                // Could not open serial port
-                return new wmnRet(-300, "NetException: " + e.Message);
-            }
+
+            _serialPort = new SerialPort(_portName, _baudrate, _parity, _databits, _stopbits);
+            _serialPort.Handshake = _handshake;
+            _serialPort.WriteTimeout = _timeout;
+            _serialPort.ReadTimeout = _timeout;
+            _serialPort.Open();
             _connected = true;
-            return new wmnRet(0, "Successful executed");
         }
 
 
-        public virtual wmnRet Connect(string portname, int baudrate, Parity parity, int databits, StopBits stopbits, Handshake handshake)
+        public virtual void Connect(string portname, int baudrate, Parity parity, int databits, StopBits stopbits, Handshake handshake)
         {
-            //Copy settings into private members
             _portName = portname;
             _baudrate = baudrate;
             _parity = parity;
             _databits = databits;
             _stopbits = stopbits;
             _handshake = handshake;
-            //Create instance
-            return this.Connect();
+            
+            Connect();
         }
 
         public override void Disconnect()
         {
-            if (_sp != null)
+            if (_serialPort != null)
             {
-                _sp.Close();
-                _sp = null;
+                _serialPort.Close();
+                _serialPort = null;
             }
             _connected = false;
         }
 
         // Send request and and wait for response 
-        protected override wmnRet Query(byte[] reqAdu, out byte[] respPdu)
+        protected override byte[] Query(byte[] requestAdu)
         {
-            respPdu = null;
+            byte[] responsePdu = null;
             if (!_connected)
-            {
-                return new wmnRet(-500, "Error: 'Not connected' ");
-            }
-            try
-            {
-                // Send Request( synchron ) 
-                _sp.Write(reqAdu, 0, reqAdu.Length);
-            }
-            catch (Exception e)
-            {
-                return new wmnRet(-300, "NetException: " + e.Message);
-            }
-            _respRaw.Initialize();
-            _respRawLength = 0;
-            _sp.ReadTimeout = _timeout;
+                throw new NotConnectedException();
+
+            // Send Request( synchron ) 
+            _serialPort.Write(requestAdu, 0, requestAdu.Length);
+            _responseBuffer.Initialize();
+            _responseBufferLength = 0;
+            _serialPort.ReadTimeout = _timeout;
             int tmpTimeout = 50; // 50 ms
             if (_baudrate < 9600)
-            {
                 tmpTimeout = (int)((10000 / _baudrate) + 50);
-            }
-            wmnRet ret;
+
             try
             {
                 // Read all data until a timeout exception is arrived
                 do
                 {
-                    _respRaw[_respRawLength] = (byte)_sp.ReadByte();
-                    _respRawLength++;
+                    _responseBuffer[_responseBufferLength] = (byte)_serialPort.ReadByte();
+                    _responseBufferLength++;
                     // Change receive timeout after first received byte
-                    if (_sp.ReadTimeout != tmpTimeout)
-                    {
-                        _sp.ReadTimeout = tmpTimeout;
-                    }
-                }
-                while (true);
+                    if (_serialPort.ReadTimeout != tmpTimeout)
+                        _serialPort.ReadTimeout = tmpTimeout;
+                } while (true);
             }
             catch (TimeoutException)
             {
                 ; // Thats what we are waiting for to know "All data received" 
             }
-            catch (Exception e)
-            {
-                // Something other happens 
-                return new wmnRet(-300, "NetException: " + e.Message); ;
-            }
             finally
             {
                 // Check Response
-                if (_respRawLength == 0)
-                {
-                    ret = new wmnRet(-102, "Timeout error: Do not receive response whitin specified 'Timeout' ");
-                }
+                if (_responseBufferLength == 0)
+                    throw new TimeoutException(); // TODO: This is a direct replacement. It may not be the appropriate Exception type.
                 else
-                {
-                    ret = CheckResponse(_respRaw, _respRawLength, out respPdu);
-                }
+                    responsePdu = CheckResponse(_responseBuffer, _responseBufferLength);
             }
-            return ret;
-        }
 
-        protected virtual wmnRet CheckResponse(byte[] respRaw, int respRawLength, out byte[] respPdu)
+            return responsePdu;
+        }
+        
+        protected virtual byte[] CheckResponse(byte[] respRaw, int respRawLength)
         {
-            respPdu = null;
+            byte[] responsePdu = null;
             // Check minimal response length 
             if (respRawLength < 5)
-            {
-                return new wmnRet(-500, "Error: Invalid response telegram, do not receive minimal length of 5 byte");
-            }
+                throw new InvalidResponseTelegramException("Error: Invalid response telegram. Did not receive minimal length of 5 bytes.");
+            
             // Is response a "modbus exception response"
             if ((respRaw[1] & 0x80) > 0)
-            {
-                return new wmnRet((int)respRaw[2], "Modbus exception received: " + ((ModbusExceptionCodes)respRaw[2]).ToString());
-            }
+                throw ModbusException.GetModbusException(respRaw[2]);
+            
             // Check CRC
             byte[] crc16 = CRC16.CalcCRC16(respRaw, respRawLength - 2);
             if ((respRaw[respRawLength - 2] != crc16[0]) | (respRaw[respRawLength - 1] != crc16[1]))
-            {
-                return new wmnRet(-501, "Error: Invalid response telegram, CRC16-check failed");
-            }
+                throw new InvalidResponseTelegramException("Error: Invalid response telegram, CRC16-check failed");
+            
             // Strip ADU header and copy response PDU into output buffer 
-            respPdu = new byte[respRawLength - 2];
+            responsePdu = new byte[respRawLength - 2];
             for (int i = 0; i < respRawLength - 2; i++)
-            {
-                respPdu[i] = respRaw[i];
-            }
-            return new wmnRet(0, "Successful executed");
+                responsePdu[i] = respRaw[i];
+
+            return responsePdu;
         }
 
-        protected override wmnRet BuildRequestAdu(byte[] reqPdu, out byte[] reqAdu)
+        protected override byte[] BuildRequestAdu(byte[] requestPdu)
         {
-            reqAdu = new byte[reqPdu.Length + 2];  // Contains the modbus request protocol data unit(PDU) togehther with additional information for ModbusRTU
+            byte[] requestAdu = new byte[requestPdu.Length + 2];  // Contains the modbus request protocol data unit(PDU) togehther with additional information for ModbusRTU
             // Copy request PDU
-            for (int i = 0; i < reqPdu.Length; i++)
-            {
-                reqAdu[i] = reqPdu[i];
-            }
+            for (int i = 0; i < requestPdu.Length; i++)
+                requestAdu[i] = requestPdu[i];
+            
             // Calc CRC16
-            byte[] crc16 = CRC16.CalcCRC16(reqAdu, reqAdu.Length - 2);
+            byte[] crc16 = CRC16.CalcCRC16(requestAdu, requestAdu.Length - 2);
             // Append CRC
-            reqAdu[reqAdu.Length - 2] = crc16[0];
-            reqAdu[reqAdu.Length - 1] = crc16[1];
+            requestAdu[requestAdu.Length - 2] = crc16[0];
+            requestAdu[requestAdu.Length - 1] = crc16[1];
 
-            return new wmnRet(0, "Successful executed");
+            return requestAdu;
         }
     }
 }

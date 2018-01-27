@@ -67,40 +67,34 @@ namespace WagoModbusNet
             _port = port;
         }
 
-        public override wmnRet Connect()
+        public override void Connect()
         {
             if (_connected)
                 Disconnect();
 
             // Create client socket
-            _sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            _sock.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, _timeout);
-            _sock.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, _timeout);
+            _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, _timeout);
+            _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, _timeout);
             // Reset timer
             _mreConnectTimeout.Reset();
-            try
+
+            // Call async Connect 
+            _socket.BeginConnect(new IPEndPoint(_ip, _port), new AsyncCallback(OnConnect), _socket);
+            // Stay here until connection established or timeout expires
+            if (_mreConnectTimeout.WaitOne(_timeout, false))
             {
-                // Call async Connect 
-                _sock.BeginConnect(new IPEndPoint(_ip, _port), new AsyncCallback(OnConnect), _sock);
-                // Stay here until connection established or timeout expires
-                if (_mreConnectTimeout.WaitOne(_timeout, false))
-                {
-                    // Successful connected
-                    _connected = true;
-                    return new wmnRet(0, "Successful executed");
-                }
-                else
-                {
-                    // Timeout expired 
-                    _connected = false;
-                    _sock.Close(); // Implizit .EndConnect free ressources 
-                    _sock = null;
-                    return new wmnRet(-101, "TIMEOUT-ERROR: Timeout expired while 'Try to connect ...'");
-                }
+                // Successful connected
+                _connected = true;
+                return;
             }
-            catch (Exception e)
+            else
             {
-                return new wmnRet(-300, "NetException: " + e.Message);
+                // Timeout expired 
+                _connected = false;
+                _socket.Close(); // Implicit .EndConnect free ressources 
+                _socket = null;
+                throw new ConnectionTimeoutException();
             }
         }
 
@@ -125,69 +119,61 @@ namespace WagoModbusNet
             }
         }
 
-        public override wmnRet Connect(string hostname)
+        public override void Connect(string hostname)
         {
             this.Hostname = hostname;
-            return Connect();
+            Connect();
         }
 
-        public override wmnRet Connect(string hostname, int port)
+        public override void Connect(string hostname, int port)
         {
             this.Hostname = hostname;
             _port = port;
-            return Connect();
+            Connect();
         }
 
         public override void Disconnect()
         {
             //Close socket and free ressources 
-            if (_sock != null)
+            if (_socket != null)
             {
-                _sock.Close();
-                _sock = null;
+                _socket.Close();
+                _socket = null;
             }
             _connected = false;
         }
 
         // Send request and and wait for response
-        protected override wmnRet Query(byte[] reqAdu, out byte[] respPdu)
+        protected override byte[] Query(byte[] requestAdu) 
         {
-            respPdu = null;  //Assign null to make compiler silent
-            if (_ip == null)
+            byte[] responsePdu = null;  //Assign null to make compiler silent
+            if (_ip == null) // TODO: remove check
             {
-                return new wmnRet(-301, "DNS error: Could not resolve Ip-Address for " + _hostname);
+                throw new IpDnsException(_hostname);
+                // TODO: Since IP is created from _hostname, the exception should be thrown when _ip is assigned
             }
             try
             {
                 if (!_connected && _autoConnect)
-                {
                     Connect();
-                }
+                
                 if (!_connected)
-                {
-                    return new wmnRet(-500, "Error: 'Not connected, call Connect()' ");
-                }
+                    throw new NotConnectedException();
+
                 // Send request sync
-                _sock.Send(reqAdu, 0, reqAdu.Length, SocketFlags.None);
+                _socket.Send(requestAdu, 0, requestAdu.Length, SocketFlags.None);
 
-                byte[] tmpBuf = new byte[255]; //Receive buffer
-
-                // Try to receive response 
-                int byteCount = _sock.Receive(tmpBuf, 0, tmpBuf.Length, SocketFlags.None);
-
-                return CheckResponse(tmpBuf, byteCount, out respPdu);
-            }
-            catch (Exception e)
-            {
-                return new wmnRet(-300, "NetException: " + e.Message);
+                byte[] receiveBuffer = new byte[255];
+                int byteCount = _socket.Receive(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None);
+                responsePdu = CheckResponse(receiveBuffer, byteCount);
             }
             finally
             {
                 if (_autoConnect)
-                {
                     Disconnect();
-                }
             }
+
+            return responsePdu;
         }
     }
 }

@@ -36,6 +36,22 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Exceptions\ConnectionTimeoutException.cs" />
+    <Compile Include="Exceptions\InvalidResponseTelegramException.cs" />
+    <Compile Include="Exceptions\IpDnsException.cs" />
+    <Compile Include="Exceptions\ModbusException.cs" />
+    <Compile Include="Exceptions\Modbus\AcknowledgeException.cs" />
+    <Compile Include="Exceptions\Modbus\GatewayPathUnavailableException.cs" />
+    <Compile Include="Exceptions\Modbus\GatewayTargetDeviceFailedToRespondException.cs" />
+    <Compile Include="Exceptions\Modbus\IllegalDataAddressException.cs" />
+    <Compile Include="Exceptions\Modbus\IllegalDataValueException.cs" />
+    <Compile Include="Exceptions\Modbus\IllegalFunctionException.cs" />
+    <Compile Include="Exceptions\Modbus\MemoryParityErrorException.cs" />
+    <Compile Include="Exceptions\Modbus\NegativeAcknowledgeException.cs" />
+    <Compile Include="Exceptions\Modbus\SlaveDeviceBusyException.cs" />
+    <Compile Include="Exceptions\Modbus\SlaveDeviceFailureException.cs" />
+    <Compile Include="Exceptions\NotConnectedException.cs" />
+    <Compile Include="Exceptions\TimeoutException.cs" />
     <Compile Include="Utilities\CRC16.cs" />
     <Compile Include="Enums\ModbusExceptionCodes.cs" />
     <Compile Include="Enums\ModbusFunctionCodes.cs" />
@@ -45,8 +61,6 @@
     <Compile Include="ModbusMasterTcp.cs" />
     <Compile Include="ModbusMasterUdp.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Enums\wmnErrorOffset.cs" />
-    <Compile Include="Enums\wmnRet.cs" />
     <Compile Include="Utilities\wmnConvert.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -2,3 +2,7 @@ D:\dev\gsulc\sandbox\WagoModbusNet\WagoModbusNet\bin\Release\WagoModbusNet.dll
 D:\dev\gsulc\sandbox\WagoModbusNet\WagoModbusNet\bin\Release\WagoModbusNet.pdb
 D:\dev\gsulc\sandbox\WagoModbusNet\WagoModbusNet\obj\Release\WagoModbusNet.dll
 D:\dev\gsulc\sandbox\WagoModbusNet\WagoModbusNet\obj\Release\WagoModbusNet.pdb
+D:\dev\gsulc\openSource\WagoModbusNet\WagoModbusNet\bin\Release\WagoModbusNet.dll
+D:\dev\gsulc\openSource\WagoModbusNet\WagoModbusNet\bin\Release\WagoModbusNet.pdb
+D:\dev\gsulc\openSource\WagoModbusNet\WagoModbusNet\obj\Release\WagoModbusNet.dll
+D:\dev\gsulc\openSource\WagoModbusNet\WagoModbusNet\obj\Release\WagoModbusNet.pdb
