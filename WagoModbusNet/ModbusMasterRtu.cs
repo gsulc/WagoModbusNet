@@ -149,7 +149,7 @@ namespace WagoModbusNet
             _responseBuffer.Initialize();
             _responseBufferLength = 0;
             _serialPort.ReadTimeout = _timeout;
-            int tmpTimeout = 50; // 50 ms
+            int tmpTimeout = 50; // milliseconds
             if (_baudrate < 9600)
                 tmpTimeout = (int)((10000 / _baudrate) + 50);
 
@@ -167,13 +167,13 @@ namespace WagoModbusNet
             }
             catch (TimeoutException)
             {
-                ; // Thats what we are waiting for to know "All data received" 
+                ; // Expected exception to know "All data received" 
             }
             finally
             {
                 // Check Response
                 if (_responseBufferLength == 0)
-                    throw new TimeoutException(); // TODO: This is a direct replacement. It may not be the appropriate Exception type.
+                    throw new TimeoutException("Timeout error: Did not receive response whitin specified 'Timeout'."); // TODO: This is a direct replacement. It may not be the appropriate Exception type.
                 else
                     responsePdu = CheckResponse(_responseBuffer, _responseBufferLength);
             }

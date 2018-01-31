@@ -51,7 +51,18 @@ namespace WagoModbusNet
                 case ModbusExceptionCodes.GATEWAY_TARGET_DEVICE_FAILED_TO_RESPOND:
                     return new GatewayTargetDeviceFailedToRespondException();
                 default: // If the code can't be cast, it will fall through to here.
-                    return new ModbusException(string.Format("Unspecified Modbus Exception Code = {0}"));
+                    return new ModbusException(string.Format("Unspecified Modbus Exception Code = {0}", (byte)code));
+            }
+        }
+
+        public override string Message
+        {
+            get
+            {
+                if (Code != null && !string.IsNullOrEmpty(Name) && !string.IsNullOrEmpty(Meaning))
+                    return string.Format("Modbus Exception Code {0}: {1}. {2}", Code, Name, Meaning);
+                else 
+                    return base.Message;
             }
         }
     }
