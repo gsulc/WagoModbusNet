@@ -59,7 +59,7 @@ namespace WagoModbusNet
         {
             get
             {
-                if (Code != null && !string.IsNullOrEmpty(Name) && !string.IsNullOrEmpty(Meaning))
+                if (!string.IsNullOrEmpty(Name) && !string.IsNullOrEmpty(Meaning))
                     return string.Format("Modbus Exception Code {0}: {1}. {2}", Code, Name, Meaning);
                 else 
                     return base.Message;

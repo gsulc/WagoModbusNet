@@ -19,10 +19,6 @@ License:
     SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-
 namespace WagoModbusNet
 {
     public class ModbusMasterAscii : ModbusMasterRtu
@@ -72,7 +68,6 @@ namespace WagoModbusNet
 
         protected override byte[] CheckResponse(byte[] respRaw, int respRawLength)
         {
-            byte[] responsePdu = null;
             // Check minimal response length 
             if (respRawLength < 13)
                 throw new InvalidResponseTelegramException("Error: Invalid response telegram, did not receive minimal length of 13 bytes");
@@ -108,7 +103,7 @@ namespace WagoModbusNet
                 throw ModbusException.GetModbusException(buffer[2]);
 
             // Strip LRC and copy response PDU into output buffer 
-            responsePdu = new byte[buffer.Length - 1];
+            byte[] responsePdu = new byte[buffer.Length - 1];
             for (int i = 0; i < responsePdu.Length; i++)
                 responsePdu[i] = buffer[i];
 

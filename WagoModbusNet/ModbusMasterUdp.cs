@@ -20,10 +20,8 @@ License:
 */
 
 using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 
 namespace WagoModbusNet
 {
@@ -89,14 +87,14 @@ namespace WagoModbusNet
         public ModbusMasterUdp(string hostname)
             : this()
         {
-            this.Hostname = hostname;
+            Hostname = hostname;
         }
 
         public ModbusMasterUdp(string hostname, int port)
             : this()
         {
-            this.Hostname = hostname;
-            this.Port = port;
+            Hostname = hostname;
+            Port = port;
         }
 
         protected bool _connected;
@@ -114,13 +112,13 @@ namespace WagoModbusNet
 
         public virtual void Connect(string hostname)
         {
-            this.Hostname = hostname;
+            Hostname = hostname;
             Connect();
         }
 
         public virtual void Connect(string hostname, int port)
         {
-            this.Hostname = hostname;
+            Hostname = hostname;
             _port = port;
             Connect();
         }
@@ -174,7 +172,6 @@ namespace WagoModbusNet
 
         protected virtual byte[] CheckResponse(byte[] respRaw, int respRawLength)
         {
-            byte[] responsePdu = null;
             // Check minimal response length of 8 byte
             if (respRawLength < 8)
                 throw new InvalidResponseTelegramException("Error: Invalid response telegram, do not receive minimal length of 8 byte");
@@ -190,11 +187,10 @@ namespace WagoModbusNet
                 throw ModbusException.GetModbusException(respRaw[8]);
 
             // Strip ADU header and copy response PDU into output buffer 
-            responsePdu = new byte[respPduLength];
+            byte[] responsePdu = new byte[respPduLength];
             for (int i = 0; i < respPduLength; i++)
-            {
                 responsePdu[i] = respRaw[6 + i];
-            }
+            
             return responsePdu;
         }
 
@@ -214,9 +210,8 @@ namespace WagoModbusNet
             reqAdu[5] = help[0];						// Number of bytes follows -Lo 
             // Copy request PDU
             for (int i = 0; i < reqPdu.Length; i++)
-            {
                 reqAdu[6 + i] = reqPdu[i];
-            }
+            
 
             return reqAdu;
         }

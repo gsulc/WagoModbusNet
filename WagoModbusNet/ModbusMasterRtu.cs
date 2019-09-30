@@ -34,43 +34,13 @@ namespace WagoModbusNet
         }
 
         private SerialPort _serialPort;             // The serial interface instance
-        private string _portName = "COM1";  // Name of serial interface like "COM23" 
-        public string Portname
-        {
-            get { return _portName; }
-            set { _portName = value; }
-        }
 
-        private int _baudrate = 9600;
-        public int Baudrate
-        {
-            get { return _baudrate; }
-            set { _baudrate = value; }
-        }
-        private int _databits = 8;
-        public int Databits
-        {
-            get { return _databits; }
-            set { _databits = value; }
-        }
-        private Parity _parity = Parity.None;
-        public Parity Parity
-        {
-            get { return _parity; }
-            set { _parity = value; }
-        }
-        private StopBits _stopbits = StopBits.One;
-        public StopBits StopBits
-        {
-            get { return _stopbits; }
-            set { _stopbits = value; }
-        }
-        private Handshake _handshake = Handshake.None;
-        public Handshake Handshake
-        {
-            get { return _handshake; }
-            set { _handshake = value; }
-        }
+        public string Portname { get; set; }
+        public int Baudrate { get; set; } = 9600;
+        public int Databits { get; set; } = 8;
+        public Parity Parity { get; set; } = Parity.None;
+        public StopBits StopBits { get; set; } = StopBits.One;
+        public Handshake Handshake { get; set; } = Handshake.None;
 
         // Receive response helpers        
         private byte[] _responseBuffer = new byte[512]; // TODO: inspect implementation. Should not keep around a buffer as a field.
@@ -87,8 +57,8 @@ namespace WagoModbusNet
             if (_connected)
                 Disconnect();
 
-            _serialPort = new SerialPort(_portName, _baudrate, _parity, _databits, _stopbits);
-            _serialPort.Handshake = _handshake;
+            _serialPort = new SerialPort(Portname, Baudrate, Parity, Databits, StopBits);
+            _serialPort.Handshake = Handshake;
             _serialPort.WriteTimeout = _timeout;
             _serialPort.ReadTimeout = _timeout;
             _serialPort.Open();
@@ -98,12 +68,12 @@ namespace WagoModbusNet
 
         public virtual void Connect(string portname, int baudrate, Parity parity, int databits, StopBits stopbits, Handshake handshake)
         {
-            _portName = portname;
-            _baudrate = baudrate;
-            _parity = parity;
-            _databits = databits;
-            _stopbits = stopbits;
-            _handshake = handshake;
+            Portname = portname;
+            Baudrate = baudrate;
+            Parity = parity;
+            Databits = databits;
+            StopBits = stopbits;
+            Handshake = handshake;
             
             Connect();
         }
@@ -131,8 +101,8 @@ namespace WagoModbusNet
             _responseBufferLength = 0;
             _serialPort.ReadTimeout = _timeout;
             int tmpTimeout = 50; // milliseconds
-            if (_baudrate < 9600)
-                tmpTimeout = (int)((10000 / _baudrate) + 50);
+            if (Baudrate < 9600)
+                tmpTimeout = (int)((10000 / Baudrate) + 50);
 
             try
             {

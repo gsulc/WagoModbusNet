@@ -20,8 +20,6 @@ License:
 */
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace WagoModbusNet
 {
@@ -52,11 +50,10 @@ namespace WagoModbusNet
         /// <returns></returns>
         public bool[] ReadCoils(byte id, ushort startAddress, ushort readCount)
         {
-            bool[] data = null;
             byte[] responsePdu = SendModbusRequest(id, ModbusFunctionCodes.ReadCoils, startAddress, readCount, 0, 0, null);
 
             //Strip PDU header and convert data into bool[]
-            data = new bool[readCount];
+            bool[] data = new bool[readCount];
             for (int i = 0, k = 0; i < readCount; i++)
             {
                 data[i] = ((responsePdu[k + 3] & (byte)(0x01 << (i % 8))) > 0) ? true : false;
@@ -79,12 +76,11 @@ namespace WagoModbusNet
         /// <returns></returns>
         public bool[] ReadDiscreteInputs(byte id, ushort startAddress, ushort readCount)
         {
-            bool[] data = null;
             byte[] responsePdu = 
                 SendModbusRequest(id, ModbusFunctionCodes.ReadDiscreteInputs, startAddress, readCount, 0, 0, null);
 
             //Strip PDU header and convert data into bool[]
-            data = new bool[readCount];
+            bool[] data = new bool[readCount];
             for (int i = 0, k = 0; i < readCount; i++)
             {
                 data[i] = ((responsePdu[k + 3] & (byte)(0x01 << (i % 8))) > 0) ? true : false;
@@ -96,7 +92,6 @@ namespace WagoModbusNet
 
         /// <summary>
         /// FC3 - Read Holding Registers
-        /// WAGO coupler and controller do not differ between FC3 and FC4
         /// </summary>
         /// <param name="id">Unit-Id or Slave-Id depending underlaying transport layer</param>
         /// <param name="startAddress"></param>
@@ -105,13 +100,12 @@ namespace WagoModbusNet
         /// <returns></returns>
         public ushort[] ReadHoldingRegisters(byte id, ushort startAddress, ushort readCount)
         {
-            ushort[] data = null;
             byte[] responsePdu = 
                 SendModbusRequest(id, ModbusFunctionCodes.ReadHoldingRegisters, startAddress, readCount, 0, 0, null);
             //Strip PDU header and convert data into ushort[]
             byte[] tmp = new byte[2];
             int count = (responsePdu[2] / 2);
-            data = new ushort[count];
+            ushort[] data = new ushort[count];
             for (int i = 0; i < count; i++)
             {
                 tmp[0] = responsePdu[4 + (2 * i)];
@@ -191,7 +185,6 @@ namespace WagoModbusNet
         public ushort GetCommEventCounter(byte id, out ushort status)
         {
             status = 0;
-            ushort eventCount = 0;
             byte[] responsePdu = SendModbusRequest(id, ModbusFunctionCodes.GetCommEventCounter, 0, 0, 0, 0, null);
 
             //Strip PDU header and convert data into ushort[]
@@ -203,7 +196,7 @@ namespace WagoModbusNet
             //Extract eventCount
             tmp[0] = responsePdu[5];
             tmp[1] = responsePdu[4];
-            eventCount = BitConverter.ToUInt16(tmp, 0);
+            ushort eventCount = BitConverter.ToUInt16(tmp, 0);
 
             return eventCount;
         }
@@ -292,7 +285,6 @@ namespace WagoModbusNet
         /// <returns></returns>
         public ushort[] ReadWriteMultipleRegisters(byte id, ushort readAddress, ushort readCount, ushort writeAddress, ushort[] writeData)
         {
-            ushort[] readData = null;
             // Convert data to write into array of byte with the correct byteorder
             byte[] writeBuffer = new byte[writeData.Length * 2];
             byte[] tmp;
@@ -310,7 +302,7 @@ namespace WagoModbusNet
             //Strip PDU header and convert data into ushort[]
             byte[] buf = new byte[2];
             int count = (responsePdu[2] / 2);
-            readData = new ushort[count];
+            ushort[] readData = new ushort[count];
             for (int i = 0; i < count; i++)
             {
                 buf[0] = responsePdu[4 + (2 * i)];

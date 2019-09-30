@@ -20,10 +20,8 @@ License:
 */
 
 using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 
 namespace WagoModbusNet
@@ -38,13 +36,13 @@ namespace WagoModbusNet
         public ModbusMasterTcp(string hostname)
             : this()
         {
-            this.Hostname = hostname;
+            Hostname = hostname;
         }
 
         public ModbusMasterTcp(string hostname, int port)
             : this()
         {
-            this.Hostname = hostname;
+            Hostname = hostname;
             _port = port;
         }
 
@@ -85,7 +83,7 @@ namespace WagoModbusNet
         {
             try
             {
-                Socket s = ar.AsyncState as Socket;
+                var s = ar.AsyncState as Socket;
                 if (s != null)
                 {
                     s.EndConnect(ar);
@@ -102,13 +100,13 @@ namespace WagoModbusNet
 
         public override void Connect(string hostname)
         {
-            this.Hostname = hostname;
+            Hostname = hostname;
             Connect();
         }
 
         public override void Connect(string hostname, int port)
         {
-            this.Hostname = hostname;
+            Hostname = hostname;
             _port = port;
             Connect();
         }
