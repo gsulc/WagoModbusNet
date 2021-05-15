@@ -10,7 +10,17 @@ namespace WagoModbusNet
         {
         }
 
-        private SerialPort _serialPort;             // The serial interface instance
+        public ModbusMasterRtu(string portname, int baudrate, int databits, Parity parity, StopBits stopbits, Handshake handshake)
+        {
+            Portname = portname;
+            Baudrate = baudrate;
+            Parity = parity;
+            Databits = databits;
+            StopBits = stopbits;
+            Handshake = handshake;
+        }
+
+        private SerialPort _serialPort;
 
         public string Portname { get; set; }
         public int Baudrate { get; set; } = 9600;
@@ -23,23 +33,17 @@ namespace WagoModbusNet
         private byte[] _responseBuffer = new byte[512]; // TODO: inspect implementation. Should not keep around a buffer as a field.
         private int _responseBufferLength;
 
-        protected bool _connected;
-        public override bool Connected
-        {
-            get { return _connected; }
-        }
-
         public override void Connect()
         {
-            if (_connected)
+            if (Connected)
                 Disconnect();
 
             _serialPort = new SerialPort(Portname, Baudrate, Parity, Databits, StopBits);
             _serialPort.Handshake = Handshake;
-            _serialPort.WriteTimeout = _timeout;
-            _serialPort.ReadTimeout = _timeout;
+            _serialPort.WriteTimeout = Timeout;
+            _serialPort.ReadTimeout = Timeout;
             _serialPort.Open();
-            _connected = true;
+            Connected = true;
         }
 
 
@@ -62,21 +66,21 @@ namespace WagoModbusNet
                 _serialPort.Close();
                 _serialPort = null;
             }
-            _connected = false;
+            Connected = false;
         }
 
         // Send request and and wait for response 
         protected override byte[] Query(byte[] requestAdu)
         {
             byte[] responsePdu = null;
-            if (!_connected)
+            if (!Connected)
                 throw new NotConnectedException();
 
             // Send Request( synchron ) 
             _serialPort.Write(requestAdu, 0, requestAdu.Length);
             _responseBuffer.Initialize();
             _responseBufferLength = 0;
-            _serialPort.ReadTimeout = _timeout;
+            _serialPort.ReadTimeout = Timeout;
             int tmpTimeout = 50; // milliseconds
             if (Baudrate < 9600)
                 tmpTimeout = (int)((10000 / Baudrate) + 50);
@@ -95,7 +99,7 @@ namespace WagoModbusNet
             }
             catch (TimeoutException)
             {
-                ; // Expected exception to know "All data received" 
+                // Expected exception to know "All data received" 
             }
             finally
             {
@@ -109,40 +113,38 @@ namespace WagoModbusNet
             return responsePdu;
         }
         
-        protected virtual byte[] CheckResponse(byte[] respRaw, int respRawLength)
+        protected virtual byte[] CheckResponse(byte[] response, int length)
         {
-            byte[] responsePdu = null;
-            // Check minimal response length 
-            if (respRawLength < 5)
+            if (length < 5)
                 throw new InvalidResponseTelegramException("Error: Invalid response telegram. Did not receive minimal length of 5 bytes.");
-            
-            // Is response a "modbus exception response"
-            if ((respRaw[1] & 0x80) > 0)
-                throw ModbusException.GetModbusException(respRaw[2]);
-            
-            // Check CRC
-            byte[] crc16 = CRC16.CalcCRC16(respRaw, respRawLength - 2);
-            if ((respRaw[respRawLength - 2] != crc16[0]) | (respRaw[respRawLength - 1] != crc16[1]))
+            if (IsModbusException(response[1]))
+                throw ModbusException.GetModbusException(response[2]);
+            if (!IsCRCValid(response, length))
                 throw new InvalidResponseTelegramException("Error: Invalid response telegram, CRC16-check failed");
             
             // Strip ADU header and copy response PDU into output buffer 
-            responsePdu = new byte[respRawLength - 2];
-            for (int i = 0; i < respRawLength - 2; i++)
-                responsePdu[i] = respRaw[i];
+            byte[] responsePdu = new byte[length - 2];
+            for (int i = 0; i < length - 2; i++)
+                responsePdu[i] = response[i];
 
             return responsePdu;
         }
 
+        private bool IsCRCValid(byte[] response, int length)
+        {
+            byte[] crc16 = CRC16.CalcCRC16(response, length - 2);
+            return (response[length - 2] == crc16[0]) && (response[length - 1] == crc16[1]);
+        }
+
         protected override byte[] BuildRequestAdu(byte[] requestPdu)
         {
-            byte[] requestAdu = new byte[requestPdu.Length + 2];  // Contains the modbus request protocol data unit(PDU) togehther with additional information for ModbusRTU
+            // Contains the modbus request protocol data unit(PDU) togehther with additional information for ModbusRTU
+            byte[] requestAdu = new byte[requestPdu.Length + 2];
             // Copy request PDU
-            for (int i = 0; i < requestPdu.Length; i++)
+            for (int i = 0; i < requestPdu.Length; ++i)
                 requestAdu[i] = requestPdu[i];
             
-            // Calc CRC16
             byte[] crc16 = CRC16.CalcCRC16(requestAdu, requestAdu.Length - 2);
-            // Append CRC
             requestAdu[requestAdu.Length - 2] = crc16[0];
             requestAdu[requestAdu.Length - 1] = crc16[1];
 

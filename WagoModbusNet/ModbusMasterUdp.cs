@@ -1,25 +1,4 @@
-﻿/* 
-License:
-    Copyright (c) WAGO Kontakttechnik GmbH & Co.KG 2013 
-    Copyright (c) Gordon Sulc 2018
-
-    Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
-    and associated documentation files (the "Software"), to deal in the Software without restriction, 
-    including without limitation the rights to use, copy, modify, merge, publish, distribute, 
-    sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is 
-    furnished to do so, subject to the following conditions:
-
-    The above copyright notice and this permission notice shall be included in all copies or substantial 
-    portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT 
-    NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
-    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
-    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
-    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
-
-using System;
+﻿using System;
 using System.Net;
 using System.Net.Sockets;
 
@@ -27,16 +6,19 @@ namespace WagoModbusNet
 {
     public class ModbusMasterUdp : ModbusMaster
     {
-        private static ushort _transactionId = 4711;
-        private ushort TransactionId
+        public ModbusMasterUdp(string hostname)
+            => Hostname = hostname;
+
+        public ModbusMasterUdp(string hostname, int port)
         {
-            get 
-            {
-                return ++_transactionId; 
-            }
+            Hostname = hostname;
+            Port = port;
         }
 
-        protected string _hostname = "";
+        private static ushort _transactionId = 4711;
+        private ushort TransactionId => ++_transactionId;
+
+        private string _hostname = "";
         public string Hostname
         {
             get { return _hostname; }
@@ -58,56 +40,25 @@ namespace WagoModbusNet
                         ipHostEntry = Dns.EndGetHostEntry(asyncResult); //EndGetHostEntry will wait for you if calling before job is done 
                     }
                     catch { }
+
                     if (ipHostEntry != null)
-                    {
                         _ip = ipHostEntry.AddressList[0];
-                    }
                 }
             }
         }
 
-        protected int _port = 502;
-        public int Port
-        {
-            get { return _port; }
-            set { _port = value; }
-        }
+        public int Port { get; protected set; } = 502;
 
-        protected bool _autoConnect;
-        public bool AutoConnect
-        {
-            get { return _autoConnect; }
-            set { _autoConnect = value; }
-        }
+        public bool AutoConnect { get; protected set; }
 
-        public ModbusMasterUdp()
-        {
-        }
-
-        public ModbusMasterUdp(string hostname)
-            : this()
-        {
-            Hostname = hostname;
-        }
-
-        public ModbusMasterUdp(string hostname, int port)
-            : this()
-        {
-            Hostname = hostname;
-            Port = port;
-        }
-
-        protected bool _connected;
-        public override bool Connected
-        {
-            get { return _connected; }
-        }
+        protected Socket Socket;
+        protected IPAddress _ip = null;
 
         public override void Connect()
         {
-            _socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, _timeout);
-            _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, _timeout);
+            Socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            Socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, Timeout);
+            Socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, Timeout);
         }
 
         public virtual void Connect(string hostname)
@@ -119,21 +70,18 @@ namespace WagoModbusNet
         public virtual void Connect(string hostname, int port)
         {
             Hostname = hostname;
-            _port = port;
+            Port = port;
             Connect();
         }
 
         public override void Disconnect()
         {
-            if (_socket != null)
+            if (Socket != null)
             {
-                _socket.Close();
-                _socket = null;
+                Socket.Close();
+                Socket = null;
             }
-
         }
-        protected Socket _socket;
-        protected IPAddress _ip = null;
 
         // Send request and and wait for response
         protected override byte[] Query(byte[] requestAdu)
@@ -144,52 +92,49 @@ namespace WagoModbusNet
                 // return new wmnRet(-301, "DNS error: Could not resolve Ip-Address for " + _hostname);
                 // TODO: Since IP is created from _hostname, the exception should be thrown when _ip is assigned
             }
-            if (!_connected)
+            if (!Connected)
                 Connect(); // Connect will succesful in any case because it just create a socket instance
 
             try
             {
                 // Send Request( synchron )             
-                IPEndPoint ipepRemote = new IPEndPoint(_ip, _port);
-                _socket.SendTo(requestAdu, ipepRemote);
+                IPEndPoint ipepRemote = new IPEndPoint(_ip, Port);
+                Socket.SendTo(requestAdu, ipepRemote);
 
                 byte[] receiveBuffer = new byte[255];
                 // Remote EndPoint to capture the identity of responding host.                    
                 EndPoint epRemote = (EndPoint)ipepRemote;
 
-                int byteCount = _socket.ReceiveFrom(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None, ref epRemote);
+                int byteCount = Socket.ReceiveFrom(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None, ref epRemote);
 
                 responsePdu = CheckResponse(receiveBuffer, byteCount);
             }
             finally
             {
-                if (_autoConnect)
+                if (AutoConnect)
                     Disconnect();
             }
 
             return responsePdu;
         }
 
-        protected virtual byte[] CheckResponse(byte[] respRaw, int respRawLength)
+        protected virtual byte[] CheckResponse(byte[] response, int length)
         {
-            // Check minimal response length of 8 byte
-            if (respRawLength < 8)
+            if (length < 8)
                 throw new InvalidResponseTelegramException("Error: Invalid response telegram, do not receive minimal length of 8 byte");
             
-            //Decode act telegram lengh
-            ushort respPduLength = (ushort)((ushort)respRaw[5] | (ushort)((ushort)(respRaw[4] << 8)));
-            // Check all bytes received 
-            if (respRawLength < respPduLength + 6)
+            ushort respPduLength = (ushort)(response[5] | (ushort)(response[4] << 8));
+            
+            if (length < respPduLength + 6)
                 throw new InvalidResponseTelegramException("Error: Invalid response telegram, do not receive complied telegram");
             
-            // Is response a "modbus exception response"
-            if ((respRaw[7] & 0x80) > 0)
-                throw ModbusException.GetModbusException(respRaw[8]);
+            if (IsModbusException(response[7]))
+                throw ModbusException.GetModbusException(response[8]);
 
             // Strip ADU header and copy response PDU into output buffer 
             byte[] responsePdu = new byte[respPduLength];
             for (int i = 0; i < respPduLength; i++)
-                responsePdu[i] = respRaw[6 + i];
+                responsePdu[i] = response[6 + i];
             
             return responsePdu;
         }
@@ -197,21 +142,21 @@ namespace WagoModbusNet
         // Prepare request telegram
         protected override byte[] BuildRequestAdu(byte[] reqPdu)
         {
-            byte[] reqAdu = new byte[6 + reqPdu.Length]; // Contains the modbus request protocol data unit(PDU) togehther with additional information for ModbusTCP
+            // Contains the modbus request protocol data unit(PDU) togehther with additional information for ModbusTCP
+            byte[] reqAdu = new byte[6 + reqPdu.Length];
             byte[] help; // Used to convert ushort into bytes
 
             help = BitConverter.GetBytes(this.TransactionId);
-            reqAdu[0] = help[1];						// Transaction-ID -Hi
-            reqAdu[1] = help[0];						// Transaction-ID -Lo
-            reqAdu[2] = 0x00;						    // Protocol-ID - allways zero
-            reqAdu[3] = 0x00;						    // Protocol-ID - allways zero
+            reqAdu[0] = help[1]; // Transaction-ID -Hi
+            reqAdu[1] = help[0]; // Transaction-ID -Lo
+            reqAdu[2] = 0x00; // Protocol-ID - allways zero
+            reqAdu[3] = 0x00; // Protocol-ID - allways zero
             help = BitConverter.GetBytes(reqPdu.Length);
-            reqAdu[4] = help[1];						// Number of bytes follows -Hi 
-            reqAdu[5] = help[0];						// Number of bytes follows -Lo 
+            reqAdu[4] = help[1]; // Number of bytes follows -Hi 
+            reqAdu[5] = help[0]; // Number of bytes follows -Lo 
             // Copy request PDU
             for (int i = 0; i < reqPdu.Length; i++)
                 reqAdu[6 + i] = reqPdu[i];
-            
 
             return reqAdu;
         }

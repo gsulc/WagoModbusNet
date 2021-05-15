@@ -2,6 +2,9 @@
 {
     public class ModbusMasterAscii : ModbusMasterRtu
     {
+        private const byte StartOfFrame = 0x3A;
+        private const byte EndOfFrame1 = 0x0D;
+        private const byte EndOfFrame2 = 0x0A;
 
         public ModbusMasterAscii()
         {
@@ -11,22 +14,22 @@
         // TODO: confusing method
         protected override byte[] BuildRequestAdu(byte[] requestPdu)
         {
-            byte[] requestAdu = new byte[((requestPdu.Length + 1) * 2) + 3];  // Contains the modbus request protocol data unit(PDU) togehther with additional information for ModbusASCII
-            // Insert START_OF_FRAME_CHAR's
-            requestAdu[0] = 0x3A;                   // START_OF_FRAME_CHAR   
+            // Contains the modbus request protocol data unit(PDU) togehther with additional information for ModbusASCII
+            byte[] requestAdu = new byte[((requestPdu.Length + 1) * 2) + 3];
+            requestAdu[0] = StartOfFrame;
 
             // Convert nibbles to ASCII, insert nibbles into ADU and calculate LRC on the fly
             byte val;
             byte lrc = 0;
-            for (int ii = 0, jj = 0; ii < (requestPdu.Length * 2); ii++)
+            for (int i = 0, j = 0; i < (requestPdu.Length * 2); i++)
             {
                 //Example : Byte = 0x5B converted to Char1 = 0x35 ('5') and Char2 = 0x42 ('B') 
-                val = ((ii % 2) == 0) ? val = (byte)((requestPdu[jj] >> 4) & 0x0F) : (byte)(requestPdu[jj] & 0x0F);
-                requestAdu[1 + ii] = (val <= 0x09) ? (byte)(0x30 + val) : (byte)(0x37 + val);
-                if ((ii % 2) != 0)
+                val = ((i % 2) == 0) ? (byte)((requestPdu[j] >> 4) & 0x0F) : (byte)(requestPdu[j] & 0x0F);
+                requestAdu[1 + i] = (val <= 0x09) ? (byte)(0x30 + val) : (byte)(0x37 + val);
+                if ((i % 2) != 0)
                 {
-                    lrc += requestPdu[jj];
-                    jj++;
+                    lrc += requestPdu[j];
+                    j++;
                 }
             }
             lrc = (byte)(lrc * (-1));
@@ -38,22 +41,20 @@
             val = (byte)(lrc & 0x0F);
             // Insert ASCII coded lower LRC nibble into ADU
             requestAdu[requestAdu.Length - 3] = (val <= 0x09) ? (byte)(0x30 + val) : (byte)(0x37 + val);
-            // Insert END_OF_FRAME_CHAR's
-            requestAdu[requestAdu.Length - 2] = 0x0D;   // END_OF_FRAME_CHAR1
-            requestAdu[requestAdu.Length - 1] = 0x0A;   // END_OF_FRAME_CHAR2
+            // Insert End of Frame
+            requestAdu[requestAdu.Length - 2] = EndOfFrame1;
+            requestAdu[requestAdu.Length - 1] = EndOfFrame2;
 
             return requestAdu;
         }
 
         protected override byte[] CheckResponse(byte[] respRaw, int respRawLength)
         {
-            // Check minimal response length 
             if (respRawLength < 13)
                 throw new InvalidResponseTelegramException("Error: Invalid response telegram, did not receive minimal length of 13 bytes");
             
-            // Check "START_OF_FRAME_CHAR" and "END_OF_FRAME_CHAR's"
-            if ((respRaw[0] != 0x3A) | (respRaw[respRawLength - 2] != 0x0D) | (respRaw[respRawLength - 1] != 0x0A))
-                throw new InvalidResponseTelegramException("Error: Invalid response telegram, could not find 'START_OF_FRAME_CHAR' or 'END_OF_FRAME_CHARs'");
+            if ((respRaw[0] != StartOfFrame) | (respRaw[respRawLength - 2] != EndOfFrame1) | (respRaw[respRawLength - 1] != EndOfFrame2))
+                throw new InvalidResponseTelegramException("Error: Invalid response telegram. No Start of Frame or End of Frame.");
 
             // Convert ASCII telegram to binary
             byte[] buffer = new byte[(respRawLength - 3) / 2];
@@ -77,8 +78,7 @@
             if (buffer[buffer.Length - 1] != lrc)
                 throw new InvalidResponseTelegramException("Error: Invalid response telegram, LRC check failed");
             
-            // Is response a "modbus exception response"
-            if ((buffer[1] & 0x80) > 0)
+            if (IsModbusException(buffer[1]))
                 throw ModbusException.GetModbusException(buffer[2]);
 
             // Strip LRC and copy response PDU into output buffer 

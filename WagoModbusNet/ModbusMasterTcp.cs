@@ -7,51 +7,35 @@ namespace WagoModbusNet
 {
     public class ModbusMasterTcp : ModbusMasterUdp
     {
-
-        public ModbusMasterTcp()
-        {
-        }
-
         public ModbusMasterTcp(string hostname)
-            : this()
-        {
-            Hostname = hostname;
-        }
+            : base(hostname) { }
 
         public ModbusMasterTcp(string hostname, int port)
-            : this()
-        {
-            Hostname = hostname;
-            _port = port;
-        }
+            : base(hostname, port) { }
 
         public override void Connect()
         {
-            if (_connected)
+            if (Connected)
                 Disconnect();
 
             // Create client socket
-            _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, _timeout);
-            _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, _timeout);
-            // Reset timer
+            Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, Timeout);
+            Socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, Timeout);
+            
             _mreConnectTimeout.Reset();
-
-            // Call async Connect 
-            _socket.BeginConnect(new IPEndPoint(_ip, _port), new AsyncCallback(OnConnect), _socket);
-            // Stay here until connection established or timeout expires
-            if (_mreConnectTimeout.WaitOne(_timeout, false))
+            
+            Socket.BeginConnect(new IPEndPoint(_ip, Port), new AsyncCallback(OnConnect), Socket);
+            if (_mreConnectTimeout.WaitOne(Timeout, false))
             {
-                // Successful connected
-                _connected = true;
+                Connected = true;
                 return;
             }
-            else
+            else // Timeout expired 
             {
-                // Timeout expired 
-                _connected = false;
-                _socket.Close(); // Implicit .EndConnect free ressources 
-                _socket = null;
+                Connected = false;
+                Socket.Close();
+                Socket = null;
                 throw new ConnectionTimeoutException();
             }
         }
@@ -64,16 +48,14 @@ namespace WagoModbusNet
             {
                 var s = ar.AsyncState as Socket;
                 if (s != null)
-                {
                     s.EndConnect(ar);
-                }
             }
             catch (Exception)
             {
             }
             finally
             {
-                _mreConnectTimeout.Set();  //Wake up waiting threat to go further
+                _mreConnectTimeout.Set(); // Wake up waiting threat to go further
             }
         }
 
@@ -86,19 +68,18 @@ namespace WagoModbusNet
         public override void Connect(string hostname, int port)
         {
             Hostname = hostname;
-            _port = port;
+            Port = port;
             Connect();
         }
 
         public override void Disconnect()
         {
-            //Close socket and free ressources 
-            if (_socket != null)
+            if (Socket != null)
             {
-                _socket.Close();
-                _socket = null;
+                Socket.Close();
+                Socket = null;
             }
-            _connected = false;
+            Connected = false;
         }
 
         // Send request and and wait for response
@@ -107,27 +88,27 @@ namespace WagoModbusNet
             byte[] responsePdu = null;  //Assign null to make compiler silent
             if (_ip == null) // TODO: remove check
             {
-                throw new IpDnsException(_hostname);
-                // TODO: Since IP is created from _hostname, the exception should be thrown when _ip is assigned
+                throw new IpDnsException(Hostname);
+                // TODO: Since IP is created from Hostname, the exception should be thrown when _ip is assigned
             }
             try
             {
-                if (!_connected && _autoConnect)
+                if (!Connected && AutoConnect)
                     Connect();
                 
-                if (!_connected)
+                if (!Connected)
                     throw new NotConnectedException();
 
                 // Send request sync
-                _socket.Send(requestAdu, 0, requestAdu.Length, SocketFlags.None);
+                Socket.Send(requestAdu, 0, requestAdu.Length, SocketFlags.None);
 
                 byte[] receiveBuffer = new byte[255];
-                int byteCount = _socket.Receive(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None);
+                int byteCount = Socket.Receive(receiveBuffer, 0, receiveBuffer.Length, SocketFlags.None);
                 responsePdu = CheckResponse(receiveBuffer, byteCount);
             }
             finally
             {
-                if (_autoConnect)
+                if (AutoConnect)
                     Disconnect();
             }
 

@@ -2,15 +2,15 @@
 {
     public enum ModbusExceptionCodes : byte
     {
-        ILLEGAL_FUNCTION = 1,
-        ILLEGAL_DATA_ADDRESS = 2,
-        ILLEGAL_DATA_VALUE = 3,
-        SLAVE_DEVICE_FAILURE = 4,
-        ACKNOWLEDGE = 5,
-        SLAVE_DEVICE_BUSY = 6,
-        NEGATIVE_ACKNOWLEDGE = 7,
-        MEMORY_PARITY_ERROR = 8,
-        GATEWAY_PATH_UNAVAILABLE = 10,
-        GATEWAY_TARGET_DEVICE_FAILED_TO_RESPOND = 11,
+        IllegalFunction = 1,
+        IllegalDataAddress = 2,
+        IllegalDataValue = 3,
+        SlaveDeviceFailure = 4,
+        Acknowledge = 5,
+        SlaveDeviceBusy = 6,
+        NegativeAcknowledge = 7,
+        MemoryParityError = 8,
+        GatewayPathUnavailable = 10,
+        GatewayTargetDeviceFailedToRespond = 11,
     };
 }
